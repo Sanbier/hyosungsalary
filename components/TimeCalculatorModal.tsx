@@ -105,7 +105,7 @@ const TimeCalculatorModal: React.FC<TimeCalculatorModalProps> = ({ isOpen, onClo
         <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 flex justify-between items-center shrink-0 z-10 relative shadow-lg shadow-indigo-500/20">
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xs shadow-inner">⏱️</span> 
-                Tính Lịch Máy
+                Thời Gian Vận Hành
             </h2>
             <div className="flex items-center gap-2">
                 <button 
