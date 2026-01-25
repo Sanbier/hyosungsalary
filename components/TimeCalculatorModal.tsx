@@ -83,6 +83,14 @@ const TimeCalculatorModal: React.FC<TimeCalculatorModalProps> = ({ isOpen, onClo
     }, 200);
   };
 
+  const handleReset = () => {
+    setStartTime('');
+    setRunTime('');
+    setNumRolls('');
+    setSchedule([]);
+    setError('');
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       {/* Backdrop */}
@@ -99,14 +107,26 @@ const TimeCalculatorModal: React.FC<TimeCalculatorModalProps> = ({ isOpen, onClo
                 <span className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xs shadow-inner">⏱️</span> 
                 Tính Lịch Máy
             </h2>
-            <button 
-                onClick={onClose} 
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-            </button>
+            <div className="flex items-center gap-2">
+                <button 
+                    onClick={handleReset} 
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                    title="Làm mới"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                </button>
+                <button 
+                    onClick={onClose} 
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                    title="Đóng"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
         {/* Scrollable Content */}

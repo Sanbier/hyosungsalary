@@ -150,18 +150,9 @@ function App() {
                   </div>
                </div>
             </GlassCard>
+            
+            {/* REMOVED: Compact Summary Cards Mobile (Redundant due to floating bubble) */}
 
-             {/* Compact Summary Cards Mobile */}
-             <div className="grid grid-cols-2 gap-2 lg:hidden">
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-3 text-white shadow-lg shadow-indigo-500/20">
-                  <p className="text-[10px] font-medium text-indigo-100 uppercase tracking-wider">Thực Lãnh</p>
-                  <p className="text-lg font-bold mt-0.5 truncate">{formatVND(result.thucLanh)}</p>
-                </div>
-                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tổng Thu Nhập</p>
-                  <p className="text-base font-bold text-gray-800 mt-0.5 truncate">{formatVND(result.tongThuNhap)}</p>
-                </div>
-             </div>
           </div>
 
           {/* RIGHT COLUMN: RESULTS & DETAILS (lg:col-span-5) */}
