@@ -6,6 +6,7 @@ import { formatVND } from './utils/format';
 import GlassCard from './components/GlassCard';
 import InputGroup from './components/InputGroup';
 import TimesheetModal from './components/TimesheetModal';
+import TimeCalculatorModal from './components/TimeCalculatorModal';
 import PresetManager from './components/PresetManager';
 import FloatingResult from './components/FloatingResult';
 import SalaryDetails from './components/SalaryDetails';
@@ -13,6 +14,7 @@ import SalaryDetails from './components/SalaryDetails';
 function App() {
   const [inputs, setInputs] = useState<SalaryInputs>(DEFAULT_INPUTS);
   const [isTimesheetModalOpen, setTimesheetModalOpen] = useState(false);
+  const [isTimeModalOpen, setTimeModalOpen] = useState(false);
 
   // Calculate salary whenever inputs change
   const result: CalculationResult = useMemo(() => calculateSalary(inputs), [inputs]);
@@ -47,7 +49,7 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full p-3 md:p-6 font-sans pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <div className="relative min-h-[100dvh] w-full px-3 md:px-6 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+1.25rem)] md:pt-8 font-sans">
       
       <div className="max-w-5xl mx-auto space-y-3 md:space-y-6">
         
@@ -59,15 +61,15 @@ function App() {
             </h1>
           </div>
           <div className="flex gap-2">
-             <a 
-              href="tinhgio.html" 
+             <button 
+              onClick={() => setTimeModalOpen(true)}
               className="px-3 py-1.5 bg-white/60 hover:bg-white border border-white/50 text-indigo-600 rounded-full shadow-sm text-xs font-bold transition-all backdrop-blur-md hover:shadow-md flex items-center gap-1.5"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
               Tính Giờ
-            </a>
+            </button>
           </div>
         </div>
 
@@ -212,6 +214,11 @@ function App() {
         onClose={() => setTimesheetModalOpen(false)} 
         currentData={inputs}
         onApply={updateFromTimesheet}
+      />
+      
+      <TimeCalculatorModal 
+        isOpen={isTimeModalOpen}
+        onClose={() => setTimeModalOpen(false)}
       />
 
     </div>
