@@ -84,13 +84,13 @@ const TimeCalculatorModal: React.FC<TimeCalculatorModalProps> = ({ isOpen, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-indigo-900/40 backdrop-blur-[2px] transition-opacity" aria-hidden="true"></div>
 
-      {/* Main Card */}
+      {/* Main Card - Centered & Rounded All Sides & GPU Accelerated */}
       <div 
-        className="relative w-full max-w-sm bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-mobile sm:animate-fade-in-scale"
+        className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-fade-in-scale transform-gpu"
         onClick={e => e.stopPropagation()}
       >
         {/* Header Gradient */}
