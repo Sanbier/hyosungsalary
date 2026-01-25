@@ -64,13 +64,11 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, id, highlight = false, c
           min="0"
           onFocus={(e) => e.target.select()}
           /* 
-             Thêm các class để ẩn nút tăng giảm (spin buttons):
-             [appearance:textfield] -> cho Firefox
-             [&::-webkit-outer-spin-button]:appearance-none -> cho Chrome/Safari/Edge
-             [&::-webkit-inner-spin-button]:appearance-none -> cho Chrome/Safari/Edge
+             QUAN TRỌNG CHO IOS: text-base (16px).
+             Nếu nhỏ hơn 16px, iOS Safari sẽ tự động zoom vào ô input khi focus, làm hỏng trải nghiệm app.
           */
           className={`
-            w-full px-4 py-3 text-[15px] font-bold rounded-[10px] outline-none transition-all duration-200
+            w-full px-4 py-3 text-base font-bold rounded-[10px] outline-none transition-all duration-200
             bg-white text-slate-700 placeholder-slate-300
             [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
             ${props.disabled 

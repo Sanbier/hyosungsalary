@@ -2,10 +2,21 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <!-- Reverted viewport to standard responsive settings for mobile-friendly view -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- iOS Optimization: 
+         - width=device-width: Chiều rộng chuẩn thiết bị
+         - initial-scale=1.0: Tỉ lệ ban đầu 1:1
+         - maximum-scale=1.0: Không cho phóng to hơn 1:1
+         - user-scalable=no: Chặn người dùng zoom thủ công
+         - viewport-fit=cover: Tràn viền (cho iPhone tai thỏ/dynamic island)
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS Web App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hyosung Salary">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    
     <title>Bảng Tính Lương Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lobster&display=swap" rel="stylesheet">
@@ -49,8 +60,21 @@
         min-height: 100vh;
         color: #1F2937;
         overflow-x: hidden;
+        /* Prevent pull-to-refresh and overscroll bounce effect on iOS */
+        overscroll-behavior-y: none;
+        /* Disable text selection to feel like an app (except inputs) */
+        -webkit-user-select: none;
+        user-select: none;
+        /* Faster tap response */
+        touch-action: manipulation;
       }
       
+      /* Re-enable text selection for inputs */
+      input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+
       /* Abstract Background Shapes */
       .bg-aurora {
         position: fixed;
