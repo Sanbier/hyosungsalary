@@ -1,3 +1,5 @@
+import { SalaryConfig } from './types';
+
 export const NGAY_CHUAN = 26;
 export const GIO_CHUAN_NGAY = 8;
 
@@ -29,4 +31,17 @@ export const DEFAULT_INPUTS = {
   cd_50: 0,
   cd_70: 0,
   cd_90: 0,
+};
+
+export const DEFAULT_CONFIG: SalaryConfig = {
+  ngay_chuan: NGAY_CHUAN,
+  pc_he_so_trinh_do: PC_HE_SO_TRINH_DO,
+  pc_ho_tro_di_lai: PC_HO_TRO_DI_LAI,
+  pc_tien_thuong: PC_TIEN_THUONG,
+  kh_bhyt_rate: KH_BHYT_RATE,
+  kh_bhtn_rate: KH_BHTN_RATE,
+  kh_bhxh_rate: KH_BHXH_RATE,
+  kh_phi_cong_doan: KH_PHI_CONG_DOAN,
+  kh_tien_tiet_kiem: KH_TIEN_TIET_KIEM,
+  kh_tien_tu_thien: KH_TIEN_TU_THIEN
 };

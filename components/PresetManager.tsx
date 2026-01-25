@@ -61,7 +61,7 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentData, onLoadPreset
             onChange={(e) => setSelectedPreset(e.target.value)}
             className="w-full pl-3 pr-8 py-2 text-sm bg-white/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 text-gray-700"
           >
-            <option value="">📂 Mở dữ liệu đã lưu</option>
+            <option value="">📂 Chọn Dữ Liệu Người Dùng</option>
             {Object.keys(presets).map(name => (
               <option key={name} value={name}>{name}</option>
             ))}
@@ -110,7 +110,7 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentData, onLoadPreset
           onClick={() => setShowSave(true)}
           className="w-full sm:w-auto px-4 py-2 bg-white text-gray-600 border border-gray-200 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
         >
-          + Lưu hiện tại
+          + Bấm Để Lưu
         </button>
       )}
 

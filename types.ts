@@ -1,3 +1,4 @@
+
 export interface SalaryInputs {
   luong_co_ban: number;
   luong_tinh_tang_ca: number;
@@ -17,6 +18,19 @@ export interface SalaryInputs {
   cd_50: number;
   cd_70: number;
   cd_90: number;
+}
+
+export interface SalaryConfig {
+  ngay_chuan: number;
+  pc_he_so_trinh_do: number;
+  pc_ho_tro_di_lai: number;
+  pc_tien_thuong: number;
+  kh_bhyt_rate: number;
+  kh_bhtn_rate: number;
+  kh_bhxh_rate: number;
+  kh_phi_cong_doan: number;
+  kh_tien_tiet_kiem: number;
+  kh_tien_tu_thien: number;
 }
 
 export interface CalculationResult {

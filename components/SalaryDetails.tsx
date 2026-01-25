@@ -111,7 +111,7 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>}
       >
         <Row label="Lương Tính Tăng Ca" value={formatVND(result.tc.luongTinhTangCa)} highlight />
-        <Row label="Đơn giá 1h (Gốc)" value={formatVND(result.tc.tien1GioTCBase)} />
+        <Row label="Lương 1 Giờ Làm" value={formatVND(result.tc.tien1GioTCBase)} />
         <Divider />
         <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Theo hệ số</h4>
         <Row label="Thường (150%)" value={formatVND(result.tc.tienTCThuong)} />
@@ -135,11 +135,11 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
         totalLabel="Tổng"
         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>}
       >
-        <Row label="PC Trình Độ (Thực tế)" value={formatVND(result.pc.pcTrinhDoCongThuc)} />
-        <Row label="PC Trách Nhiệm" value={formatVND(result.pc.pcTrachNhiem)} />
-        <Row label="PC Thâm Niên" value={formatVND(result.pc.pcThamNien)} />
-        <Row label="PC Tay Nghề" value={formatVND(result.pc.pcTayNghe)} />
-        <Row label="PC Chuyên Cần" value={formatVND(result.pc.pcChuyenCan)} highlight />
+        <Row label="Phụ cấp Trình Độ" value={formatVND(result.pc.pcTrinhDoCongThuc)} />
+        <Row label="Phụ cấp Trách Nhiệm" value={formatVND(result.pc.pcTrachNhiem)} />
+        <Row label="Phụ cấp Thâm Niên" value={formatVND(result.pc.pcThamNien)} />
+        <Row label="Phụ cấp Tay Nghề" value={formatVND(result.pc.pcTayNghe)} />
+        <Row label="Phụ cấp Chuyên Cần" value={formatVND(result.pc.pcChuyenCan)} highlight />
         <Row label="Hỗ Trợ Đi Lại" value={formatVND(result.pc.pcDiLai)} />
         <Row label="Tiền Thưởng" value={formatVND(result.pc.pcThuong)} />
       </DetailSection>
