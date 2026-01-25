@@ -29,7 +29,8 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, id, highlight = false, c
     onChange?.(syntheticEvent as any);
   };
 
-  const displayValue = currency ? formatValue(value) : value;
+  // Logic mới: Nếu value là 0 thì để rỗng để người dùng nhập luôn, không cần xóa
+  const displayValue = (value === 0) ? '' : (currency ? formatValue(value) : value);
 
   return (
     <div className={`flex flex-col space-y-1 mb-1 ${className}`}>
@@ -49,7 +50,13 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, id, highlight = false, c
           type={currency ? "tel" : "number"}
           inputMode={currency ? "numeric" : undefined}
           min="0"
-          onFocus={(e) => e.target.select()}
+          placeholder="0"
+          onFocus={(e) => {
+            // Chỉ select (bôi đen) nếu có giá trị thực (khác 0)
+            if (value !== 0) {
+              e.target.select();
+            }
+          }}
           /* 
              Compact Padding: py-2
              Keep Text Size: text-base (16px) to prevent iOS zoom
@@ -67,14 +74,6 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, id, highlight = false, c
           onChange={currency ? handleCurrencyChange : onChange}
           {...props}
         />
-        
-        {highlight && !props.disabled && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sky-400 opacity-60">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-              <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clipRule="evenodd" />
-            </svg>
-          </div>
-        )}
       </div>
     </div>
   );

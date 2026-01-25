@@ -88,7 +88,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             onClick={handleApply}
             className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95 hover:-translate-y-1"
           >
-            ✅ Áp Dụng Dữ Liệu
+             Áp Dụng Dữ Liệu
           </button>
           <p className="text-center text-xs text-slate-400 mt-2">Dữ liệu này sẽ được đồng bộ vào bảng chính</p>
         </div>
