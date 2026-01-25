@@ -91,7 +91,8 @@ function App() {
                 </button>
               }
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+              {/* Changed grid layout: 2 columns on mobile (grid-cols-2) and desktop */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-x-6 sm:gap-y-5">
                 {/* Đã thêm prop 'currency' cho các ô nhập tiền */}
                 <InputGroup id="luong_co_ban" label="Lương Cơ Bản" value={inputs.luong_co_ban} onChange={handleInputChange} currency />
                 
@@ -118,6 +119,7 @@ function App() {
                 <InputGroup id="pc_trach_nhiem" label="Trách Nhiệm" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency />
                 <InputGroup id="pc_tham_nien" label="Thâm Niên" value={inputs.pc_tham_nien} onChange={handleInputChange} currency />
                 
+                {/* Cho ô cuối cùng nằm riêng 1 mình nếu lẻ, hoặc cho nó full width nếu muốn đẹp hơn. Ở đây giữ nguyên 2 cột để gọn */}
                 <InputGroup id="pc_tay_nghe" label="Tay Nghề" value={inputs.pc_tay_nghe} onChange={handleInputChange} currency />
               </div>
 
