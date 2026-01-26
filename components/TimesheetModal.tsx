@@ -111,37 +111,41 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         // 2. Call Gemini API
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
+        // Prompt đã được tối ưu hóa cho Vision Model
         const prompt = `
-          Bạn là chuyên gia xử lý dữ liệu bảng lương (OCR).
+          Bạn là hệ thống OCR trích xuất dữ liệu bảng lương.
           
-          NHIỆM VỤ: Trích xuất số liệu từ ảnh bảng chấm công.
-          LƯU Ý QUAN TRỌNG: Ảnh có thể bị xoay ngang. Hãy tự động định hướng lại trong đầu để đọc chính xác.
+          NHIỆM VỤ: Tìm và đọc chính xác các con số trong bảng.
+          LƯU Ý: Ảnh có thể bị xoay hoặc chụp nghiêng. Hãy tự định hướng lại ảnh.
 
-          HƯỚNG DẪN TÌM CỘT (Dựa vào cột 'Gongsoo' làm mốc chuẩn ở cuối bên phải):
-          1. Tìm cột [Gongsoo].
-          2. Cột ngay bên TRÁI [Gongsoo] -> [Night time 90%].
-          3. Bên TRÁI [Night time 90%] -> [Night time 70%] (Thường có dữ liệu).
-          4. Bên TRÁI [Night time 70%] -> [Night time 60%].
-          5. Bên TRÁI [Night time 60%] -> [Night time 50%].
-          6. Bên TRÁI [Night time 50%] -> [Night time 30%].
+          HÃY TÌM DÒNG DỮ LIỆU SỐ (Thường nằm dưới dòng tiêu đề).
+          
+          MAPPING CỘT TỪ PHẢI SANG TRÁI (Lấy cột "Gongsoo" làm mốc cuối cùng bên phải):
+          1. Cột [Gongsoo] (Tổng công).
+          2. Sang trái 1 cột -> [Night time 90%] (Thường = 0).
+          3. Sang trái tiếp -> [Night time 70%] (Thường có số liệu > 0).
+          4. Sang trái tiếp -> [Night time 60%] (Bỏ qua).
+          5. Sang trái tiếp -> [Night time 50%].
+          6. Sang trái tiếp -> [Night time 30%].
 
-          YÊU CẦU OUTPUT (JSON Only):
+          OUTPUT JSON (Chỉ trả về JSON thuần):
           {
-            "wd_total": number, // Tổng ngày công
-            "al": number,       // Phép năm
-            "ot_15": number,    // OT 1.5
-            "ot_2": number,     // OT 2.0
-            "ot_ht": number,    // OT HT
+            "wd_total": number, // Tổng ngày công (WD Total)
+            "al": number,       // Phép năm (AL)
+            "ot_15": number,    // OT 1.5 (Overtime 1.5)
+            "ot_2": number,     // OT 2.0 (Overtime 2.0)
+            "ot_ht": number,    // OT HT (Holiday)
             "nt_30": number,    // Ca đêm 30%
             "nt_50": number,    // Ca đêm 50%
             "nt_70": number,    // Ca đêm 70%
             "nt_90": number     // Ca đêm 90%
           }
-          Giá trị mặc định là 0 nếu không thấy hoặc là dấu gạch ngang (-).
+          Quy tắc: Nếu ô trống hoặc dấu gạch ngang (-), trả về 0.
         `;
 
         const response = await ai.models.generateContent({
-          // SỬA LỖI: Dùng model gemini-2.0-flash-exp (Vision) thay vì gemini-2.5-flash-image (Tạo ảnh)
+          // SỬA LỖI: Dùng model gemini-2.0-flash-exp (Vision mạnh nhất hiện tại)
+          // Nếu model này quá tải, có thể thử gemini-1.5-pro
           model: 'gemini-2.0-flash-exp', 
           contents: {
             parts: [
@@ -150,8 +154,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ]
           },
           config: {
-            temperature: 0.1, // Giảm sáng tạo để tăng độ chính xác số liệu
-            // Tắt bộ lọc an toàn để tránh chặn nhầm dữ liệu tài chính
+            temperature: 0, // Nhiệt độ 0 để lấy dữ liệu chính xác nhất
             safetySettings: [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -190,7 +193,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
       } catch (error) {
         console.error("Gemini Error:", error);
-        alert("⚠️ Không đọc được ảnh!\n\nHãy thử lại với:\n1. Model đã được cập nhật bản Vision mới nhất.\n2. Ảnh chụp đủ sáng và rõ nét.");
+        alert("⚠️ Không đọc được ảnh!\n\nHãy đảm bảo:\n1. Ảnh chụp rõ nét, đủ sáng.\n2. Chụp chính diện bảng số liệu.\n3. Mạng internet ổn định.");
         setIsScanning(false);
       }
       
@@ -217,8 +220,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                   <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">AI</div>
                 </div>
-                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang xử lý ảnh...</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Đang dùng Gemini 2.0 Flash Vision</p>
+                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang đọc dữ liệu...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 2.0 Vision</p>
             </div>
         )}
 
@@ -244,9 +247,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (Siêu Tốc)
+                 Quét Ảnh Bảng Công (Mới nhất)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Hỗ trợ tốt nhất ảnh chụp ngang & đủ sáng</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Đã cập nhật model Gemini 2.0 Flash Exp</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
