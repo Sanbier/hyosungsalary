@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SalaryInputs } from '../types';
 import InputGroup from './InputGroup';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 interface TimesheetModalProps {
   isOpen: boolean;
@@ -53,7 +53,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // 1500px: Balance between quality and token usage
+          // 1500px: Kích thước lớn để AI đọc rõ số liệu
           const MAX_WIDTH = 1500; 
           let width = img.width;
           let height = img.height;
@@ -75,7 +75,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
@@ -103,11 +103,11 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         const prompt = `
           Extract salary data from this timesheet image.
           Identify columns for Working Days (Gongsoo), Overtime (1.5, 2.0, Holiday), and Night Time (30%, 50%, 70%, 90%).
-          Return 0 for empty values.
+          Return 0 for numeric fields if empty.
         `;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash', 
+          model: 'gemini-1.5-flash', // Free Tier Model
           contents: {
             parts: [
                 { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
@@ -117,6 +117,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           config: {
             temperature: 0,
             responseMimeType: "application/json",
+            // Cấu hình Schema giúp 1.5 Flash trả về JSON chuẩn hơn
             responseSchema: {
               type: Type.OBJECT,
               properties: {
@@ -130,18 +131,28 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                 nt_70: { type: Type.NUMBER, description: "Night Time 70%" },
                 nt_90: { type: Type.NUMBER, description: "Night Time 90%" },
               },
-              required: ["wd_total", "ot_15", "nt_30"],
-            }
+              required: ["wd_total"],
+            },
+            // Tắt bộ lọc an toàn để tránh chặn nhầm văn bản trong ảnh
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            ]
           }
         });
 
-        const jsonStr = response.text || "{}";
+        // 1.5 Flash đôi khi vẫn bọc JSON trong Markdown ```json ... ```
+        let jsonStr = response.text || "{}";
+        jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+
         let data;
         try {
           data = JSON.parse(jsonStr);
         } catch (e) {
           console.error("Parse JSON Error:", jsonStr);
-          throw new Error("Dữ liệu trả về không đúng định dạng JSON.");
+          throw new Error("Không thể đọc dữ liệu từ ảnh. Vui lòng thử lại ảnh rõ nét hơn.");
         }
 
         const totalWorkDays = (data.wd_total || 0) + (data.al || 0);
@@ -163,9 +174,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
       } catch (error: any) {
         console.error("Gemini Error:", error);
         let msg = error.message || "Lỗi không xác định";
-        if (msg.includes("404")) msg = "Model AI không phản hồi (404). Vui lòng thử lại sau.";
-        if (msg.includes("400")) msg = "Ảnh không hợp lệ hoặc bị lỗi.";
-        if (msg.includes("503")) msg = "Server quá tải.";
+        if (msg.includes("404")) msg = "Sai cấu hình Model. Vui lòng kiểm tra API Key.";
+        if (msg.includes("503")) msg = "Server đang bận (503). Hãy thử lại sau.";
         
         alert(`⚠️ LỖI: ${msg}`);
         setIsScanning(false);
@@ -191,11 +201,11 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         {isScanning && (
             <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-[4px] flex flex-col items-center justify-center animate-fade-in">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">AI</div>
+                  <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-600">AI</div>
                 </div>
-                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang xử lý hình ảnh...</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 2.0 Flash</p>
+                <p className="text-emerald-800 font-bold text-sm mt-4 animate-pulse">Đang phân tích ảnh...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 1.5 Flash (Free Tier)</p>
             </div>
         )}
 
@@ -221,9 +231,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (AI)
+                 Quét Ảnh Bảng Công (Miễn Phí)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Sử dụng công nghệ Gemini 2.0 Flash</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Sử dụng model Gemini 1.5 Flash</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
