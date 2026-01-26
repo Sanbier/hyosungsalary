@@ -45,9 +45,9 @@ const FloatingResult: React.FC<FloatingResultProps> = ({ value }) => {
               </svg>
             </div>
             
-            <h3 className="text-lg font-bold text-slate-800 mb-1">Tải lại trang?</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">Cập Nhật Phần Mềm</h3>
             <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-              Mọi thay đổi chưa lưu sẽ bị mất.<br/>Bạn có chắc chắn muốn làm mới không?
+              Mọi thay đổi chưa lưu sẽ bị mất.<br/>Bạn có chắc chắn muốn cập nhật không?
             </p>
             
             <div className="grid grid-cols-2 gap-3">

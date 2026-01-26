@@ -53,8 +53,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // Tăng độ phân giải lên 2560px để giữ nét chữ số
-          const MAX_WIDTH = 2560; 
+          // Resize về 2048px là đủ nét và nhanh
+          const MAX_WIDTH = 2048; 
           let width = img.width;
           let height = img.height;
 
@@ -67,21 +67,34 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           
-          // Dùng bộ lọc tốt hơn khi vẽ lại ảnh
           if (ctx) {
+            // QUAN TRỌNG: Tô nền trắng trước để tránh ảnh PNG trong suốt bị đen thui
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+            
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          // Tăng chất lượng ảnh lên 0.9 (gần như gốc nhưng nhẹ hơn)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          // Nén JPEG quality 0.85
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
       };
       reader.onerror = (err) => reject(err);
     });
+  };
+
+  // Hàm trích xuất JSON thông minh (Lấy từ dấu { đầu tiên đến } cuối cùng)
+  const extractJSON = (text: string): string => {
+    const startIndex = text.indexOf('{');
+    const endIndex = text.lastIndexOf('}');
+    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        return text.substring(startIndex, endIndex + 1);
+    }
+    return text; // Fallback
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,45 +104,40 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
     setIsScanning(true);
 
     try {
-      // 1. Compress Image (Client-side)
+      // 1. Compress Image
       const base64Data = await compressImage(file);
       
-      if (!base64Data) {
-          throw new Error("Lỗi nén ảnh");
-      }
-
       // 2. Call Gemini API
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const prompt = `
-        Bạn là chuyên gia OCR xử lý bảng lương. Hãy trích xuất dữ liệu từ hình ảnh.
+        Bạn là hệ thống OCR đọc bảng lương. 
+        NHIỆM VỤ: Chỉ trả về JSON thuần túy, không thêm bất kỳ lời dẫn hay Markdown nào.
 
-        TÌM DÒNG DỮ LIỆU SỐ DỰA TRÊN TIÊU ĐỀ SAU (Từ trái sang phải):
-        ... | OT HT | Night time 30% | NT 50% | NT 60% | NT 70% | NT 90% | Gongsoo | ...
+        QUY TẮC ĐỌC CỘT (Từ trái sang phải):
+        1. Tìm dòng tiêu đề chứa "Overtime" hoặc "Night time". Dữ liệu số nằm ở dòng ngay dưới.
+        2. Xác định cột mốc "Gongsoo" (cuối bảng).
+        3. Mapping ngược từ Gongsoo sang trái:
+           - Sát trái Gongsoo là cột [Night time 90%] (Thường = 0).
+           - Bên trái cột 90% là cột [Night time 70%] (Thường có dữ liệu, ví dụ 16).
+           - Bên trái cột 70% là cột [Night time 60%] (Thường trống, bỏ qua).
+           - Bên trái cột 60% là cột [Night time 50%].
+           - Bên trái cột 50% là cột [Night time 30%].
 
-        QUY TẮC NHẬN DIỆN CỰC KỲ QUAN TRỌNG:
-        1. Tìm cột mốc "Gongsoo" (thường nằm gần cuối). Cột này KHÔNG lấy dữ liệu.
-        2. Nhìn sang TRÁI của "Gongsoo":
-           - Cột ngay sát trái Gongsoo là "Night time 90%": Thường là trống hoặc 0.
-           - Cột bên trái của 90% là "Night time 70%": Đây là cột quan trọng, thường có giá trị (ví dụ 16).
-           - Cột bên trái của 70% là "Night time 60%": Thường trống hoặc gạch ngang. Bỏ qua.
-           - Cột bên trái của 60% là "Night time 50%".
-           - Cột bên trái của 50% là "Night time 30%".
-        
-        HÃY TRẢ VỀ JSON DUY NHẤT (Không Markdown):
+        OUTPUT JSON:
         {
-          "wd_total": number, // Tổng ngày công (WD Total)
-          "al": number,       // AL
-          "ot_15": number,    // OT 1.5
-          "ot_2": number,     // OT 2.0
-          "ot_ht": number,    // OT HT (Lễ)
-          "nt_30": number,    // Night time 30%
-          "nt_50": number,    // Night time 50%
-          "nt_70": number,    // Night time 70% (Nhớ quy tắc: Cách Gongsoo 1 cột về bên trái)
-          "nt_90": number     // Night time 90% (Nhớ quy tắc: Sát bên trái Gongsoo)
+          "wd_total": number,
+          "al": number,
+          "ot_15": number,
+          "ot_2": number,
+          "ot_ht": number,
+          "nt_30": number,
+          "nt_50": number,
+          "nt_70": number,
+          "nt_90": number
         }
-        
-        Nếu ô trống hoặc dấu gạch ngang (-), giá trị là 0.
+
+        Nếu ô trống, không rõ hoặc có dấu gạch ngang (-), hãy điền 0.
       `;
 
       const response = await ai.models.generateContent({
@@ -142,9 +150,19 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         }
       });
 
-      const text = response.text || "{}";
-      const jsonStr = text.replace(/```json|```/g, '').trim();
-      const data = JSON.parse(jsonStr);
+      console.log("Gemini Raw Response:", response.text); // Để debug nếu cần
+
+      const rawText = response.text || "{}";
+      // Dùng hàm extractJSON để lọc bỏ rác văn bản
+      const jsonStr = extractJSON(rawText);
+      
+      let data;
+      try {
+        data = JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("JSON Parse Fail:", jsonStr);
+        throw new Error("AI trả về dữ liệu không đúng định dạng.");
+      }
 
       // 3. Update State Logic
       const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
@@ -165,7 +183,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
     } catch (error) {
       console.error("Gemini Error:", error);
-      alert("Không thể đọc được số liệu. Hãy đảm bảo ảnh đủ sáng và rõ nét.");
+      alert("Lỗi: Không đọc được dữ liệu trong ảnh. Vui lòng chụp lại rõ nét hơn hoặc cắt bớt phần thừa.");
       setIsScanning(false);
     }
     
@@ -189,7 +207,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center animate-fade-in">
                 <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
                 <p className="text-indigo-600 font-bold text-sm animate-pulse">Đang phân tích bảng lương...</p>
-                <p className="text-xs text-slate-400 mt-1">Đang xử lý ảnh...</p>
+                <p className="text-xs text-slate-400 mt-1">AI đang đọc dữ liệu...</p>
             </div>
         )}
 
