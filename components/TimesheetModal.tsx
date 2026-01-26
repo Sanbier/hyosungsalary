@@ -53,7 +53,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // 1500px: Kích thước lớn để AI đọc rõ số liệu
+          // Giữ độ phân giải cao để AI đọc số nhỏ
           const MAX_WIDTH = 1500; 
           let width = img.width;
           let height = img.height;
@@ -100,14 +100,22 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         const base64Data = await compressImage(file);
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
+        // Prompt tối ưu cho Gemini 2.0 Flash
         const prompt = `
-          Extract salary data from this timesheet image.
-          Identify columns for Working Days (Gongsoo), Overtime (1.5, 2.0, Holiday), and Night Time (30%, 50%, 70%, 90%).
-          Return 0 for numeric fields if empty.
+          Phân tích bảng lương/chấm công trong ảnh. Tìm và trích xuất chính xác các số liệu sau (trả về 0 nếu ô trống):
+          
+          1. **Gongsoo / Working Days (Tổng ngày công)**: Thường ở cột 'Gongsoo' hoặc 'Total Days'.
+          2. **AL (Phép năm)**: Số ngày nghỉ phép có lương.
+          3. **OT 1.5 (Tăng ca thường)**: Số giờ tăng ca ngày thường (hệ số 1.5).
+          4. **OT 2.0 (Tăng ca ngày nghỉ)**: Số giờ làm chủ nhật/Off day (hệ số 2.0).
+          5. **OT Holiday (Tăng ca lễ)**: Số giờ làm ngày lễ (hệ số 3.0).
+          6. **Night Time (Phụ cấp đêm)**: Các cột 30%, 50%, 70%, 90%.
+
+          LƯU Ý: Hãy nhìn kỹ các con số thập phân (ví dụ 0.5, 1.5). Trả về JSON.
         `;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-1.5-flash', // Free Tier Model
+          model: 'gemini-2.0-flash', // Model 2.0 Free Tier: Thông minh hơn 1.5 Flash, Nhanh hơn 1.5 Pro
           contents: {
             parts: [
                 { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
@@ -117,23 +125,21 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           config: {
             temperature: 0,
             responseMimeType: "application/json",
-            // Cấu hình Schema giúp 1.5 Flash trả về JSON chuẩn hơn
             responseSchema: {
               type: Type.OBJECT,
               properties: {
-                wd_total: { type: Type.NUMBER, description: "Total Working Days (Gongsoo)" },
-                al: { type: Type.NUMBER, description: "Annual Leave days" },
-                ot_15: { type: Type.NUMBER, description: "Overtime 1.5 (Normal)" },
-                ot_2: { type: Type.NUMBER, description: "Overtime 2.0 (Day Off)" },
-                ot_ht: { type: Type.NUMBER, description: "Overtime Holiday" },
-                nt_30: { type: Type.NUMBER, description: "Night Time 30%" },
-                nt_50: { type: Type.NUMBER, description: "Night Time 50%" },
-                nt_70: { type: Type.NUMBER, description: "Night Time 70%" },
-                nt_90: { type: Type.NUMBER, description: "Night Time 90%" },
+                wd_total: { type: Type.NUMBER, description: "Total Working Days / Gongsoo" },
+                al: { type: Type.NUMBER, description: "Annual Leave (AL)" },
+                ot_15: { type: Type.NUMBER, description: "Overtime 1.5 Hours" },
+                ot_2: { type: Type.NUMBER, description: "Overtime 2.0 Hours" },
+                ot_ht: { type: Type.NUMBER, description: "Overtime Holiday Hours" },
+                nt_30: { type: Type.NUMBER, description: "Night 30%" },
+                nt_50: { type: Type.NUMBER, description: "Night 50%" },
+                nt_70: { type: Type.NUMBER, description: "Night 70%" },
+                nt_90: { type: Type.NUMBER, description: "Night 90%" },
               },
               required: ["wd_total"],
             },
-            // Tắt bộ lọc an toàn để tránh chặn nhầm văn bản trong ảnh
             safetySettings: [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -143,8 +149,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           }
         });
 
-        // 1.5 Flash đôi khi vẫn bọc JSON trong Markdown ```json ... ```
+        // Xử lý kết quả
         let jsonStr = response.text || "{}";
+        // Clean markdown block if present
         jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
 
         let data;
@@ -152,7 +159,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           data = JSON.parse(jsonStr);
         } catch (e) {
           console.error("Parse JSON Error:", jsonStr);
-          throw new Error("Không thể đọc dữ liệu từ ảnh. Vui lòng thử lại ảnh rõ nét hơn.");
+          throw new Error("Không đọc được dữ liệu JSON từ ảnh.");
         }
 
         const totalWorkDays = (data.wd_total || 0) + (data.al || 0);
@@ -174,8 +181,10 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
       } catch (error: any) {
         console.error("Gemini Error:", error);
         let msg = error.message || "Lỗi không xác định";
-        if (msg.includes("404")) msg = "Sai cấu hình Model. Vui lòng kiểm tra API Key.";
-        if (msg.includes("503")) msg = "Server đang bận (503). Hãy thử lại sau.";
+        
+        if (msg.includes("404")) msg = "Model 'gemini-2.0-flash' chưa được kích hoạt hoặc sai API Key.";
+        if (msg.includes("400")) msg = "Lỗi dữ liệu gửi đi (Bad Request).";
+        if (msg.includes("503")) msg = "Server quá tải. Vui lòng thử lại.";
         
         alert(`⚠️ LỖI: ${msg}`);
         setIsScanning(false);
@@ -201,11 +210,11 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         {isScanning && (
             <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-[4px] flex flex-col items-center justify-center animate-fade-in">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-emerald-600">AI</div>
+                  <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">2.0</div>
                 </div>
-                <p className="text-emerald-800 font-bold text-sm mt-4 animate-pulse">Đang phân tích ảnh...</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 1.5 Flash (Free Tier)</p>
+                <p className="text-blue-800 font-bold text-sm mt-4 animate-pulse">Đang quét dữ liệu...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 2.0 Flash</p>
             </div>
         )}
 
@@ -231,9 +240,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (Miễn Phí)
+                 Quét Ảnh Bảng Công (AI 2.0)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Sử dụng model Gemini 1.5 Flash</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Sử dụng Gemini 2.0 Flash - Nhanh & Chính xác</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
