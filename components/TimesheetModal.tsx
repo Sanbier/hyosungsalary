@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SalaryInputs } from '../types';
 import InputGroup from './InputGroup';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 interface TimesheetModalProps {
   isOpen: boolean;
@@ -53,7 +53,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // GIẢM XUỐNG 1600px: Đủ nét cho OCR nhưng nhẹ hơn nhiều cho Safari Mobile
+          // 1600px là điểm ngọt cho tốc độ/độ nét trên Mobile Web
           const MAX_WIDTH = 1600; 
           let width = img.width;
           let height = img.height;
@@ -68,7 +68,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           const ctx = canvas.getContext('2d');
           
           if (ctx) {
-            // Nền trắng (Fix lỗi ảnh PNG trong suốt bị đen)
+            // Nền trắng quan trọng cho ảnh PNG
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, width, height);
             
@@ -77,7 +77,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          // Nén JPEG quality 0.9 (Cao để giữ nét số)
+          // JPEG 0.9
           const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           resolve(dataUrl.split(',')[1]);
         };
@@ -103,7 +103,6 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
     setIsScanning(true);
 
-    // Dùng timeout để UI kịp hiển thị Loading trước khi xử lý nặng
     setTimeout(async () => {
       try {
         // 1. Compress Image
@@ -113,40 +112,51 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
         const prompt = `
-          Bạn là chuyên gia OCR.
+          Bạn là chuyên gia xử lý dữ liệu bảng lương (OCR).
           
-          VẤN ĐỀ QUAN TRỌNG: Ảnh này có thể bị chụp bằng điện thoại và BỊ XOAY NGANG (90 độ).
-          NHIỆM VỤ: Hãy tự động phát hiện chiều của chữ số và "xoay ảo" ảnh trong đầu để đọc đúng từ trái sang phải.
-          
-          HÃY TÌM BẢNG LƯƠNG VÀ TRÍCH XUẤT (Mapping theo cột Gongsoo):
-          1. Tìm cột mốc "Gongsoo" (thường ở cuối).
-          2. Cột ngay bên TRÁI Gongsoo -> là [NT 90%] (Thường = 0).
-          3. Cột bên TRÁI của [NT 90%] -> là [NT 70%] (Thường có dữ liệu).
-          4. Cột bên TRÁI của [NT 70%] -> là [NT 60%] (Bỏ qua).
-          5. Cột bên TRÁI của [NT 60%] -> là [NT 50%].
-          6. Cột bên TRÁI của [NT 50%] -> là [NT 30%].
+          NHIỆM VỤ: Trích xuất số liệu từ ảnh bảng chấm công.
+          LƯU Ý QUAN TRỌNG: Ảnh có thể bị xoay ngang. Hãy tự động định hướng lại trong đầu để đọc chính xác.
 
-          OUTPUT JSON (Chỉ JSON, không giải thích):
+          HƯỚNG DẪN TÌM CỘT (Dựa vào cột 'Gongsoo' làm mốc chuẩn ở cuối bên phải):
+          1. Tìm cột [Gongsoo].
+          2. Cột ngay bên TRÁI [Gongsoo] -> [Night time 90%].
+          3. Bên TRÁI [Night time 90%] -> [Night time 70%] (Thường có dữ liệu).
+          4. Bên TRÁI [Night time 70%] -> [Night time 60%].
+          5. Bên TRÁI [Night time 60%] -> [Night time 50%].
+          6. Bên TRÁI [Night time 50%] -> [Night time 30%].
+
+          YÊU CẦU OUTPUT (JSON Only):
           {
-            "wd_total": number,
-            "al": number,
-            "ot_15": number,
-            "ot_2": number,
-            "ot_ht": number,
-            "nt_30": number,
-            "nt_50": number,
-            "nt_70": number,
-            "nt_90": number
+            "wd_total": number, // Tổng ngày công
+            "al": number,       // Phép năm
+            "ot_15": number,    // OT 1.5
+            "ot_2": number,     // OT 2.0
+            "ot_ht": number,    // OT HT
+            "nt_30": number,    // Ca đêm 30%
+            "nt_50": number,    // Ca đêm 50%
+            "nt_70": number,    // Ca đêm 70%
+            "nt_90": number     // Ca đêm 90%
           }
-          Nếu ô trống hoặc (-), giá trị là 0.
+          Giá trị mặc định là 0 nếu không thấy hoặc là dấu gạch ngang (-).
         `;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
+          // SỬA LỖI: Dùng model gemini-2.0-flash-exp (Vision) thay vì gemini-2.5-flash-image (Tạo ảnh)
+          model: 'gemini-2.0-flash-exp', 
           contents: {
             parts: [
                 { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
                 { text: prompt }
+            ]
+          },
+          config: {
+            temperature: 0.1, // Giảm sáng tạo để tăng độ chính xác số liệu
+            // Tắt bộ lọc an toàn để tránh chặn nhầm dữ liệu tài chính
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
             ]
           }
         });
@@ -159,7 +169,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           data = JSON.parse(jsonStr);
         } catch (e) {
           console.error("Parse Error. Raw text:", rawText);
-          throw new Error("Không tìm thấy cấu trúc JSON hợp lệ.");
+          throw new Error("Không tìm thấy cấu trúc dữ liệu.");
         }
 
         const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
@@ -180,7 +190,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
       } catch (error) {
         console.error("Gemini Error:", error);
-        alert("⚠️ Không đọc được ảnh!\n\nNguyên nhân có thể:\n1. Ảnh chụp bị xoay ngang/dọc khó đọc.\n2. Ảnh quá mờ hoặc tối.\n3. Chụp quá xa bảng lương.\n\n👉 Hãy thử chụp lại: Thẳng góc & Đủ sáng.");
+        alert("⚠️ Không đọc được ảnh!\n\nHãy thử lại với:\n1. Model đã được cập nhật bản Vision mới nhất.\n2. Ảnh chụp đủ sáng và rõ nét.");
         setIsScanning(false);
       }
       
@@ -207,8 +217,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                   <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">AI</div>
                 </div>
-                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang phân tích...</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Đang xử lý hướng xoay & đọc số liệu</p>
+                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang xử lý ảnh...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Đang dùng Gemini 2.0 Flash Vision</p>
             </div>
         )}
 
