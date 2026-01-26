@@ -53,8 +53,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // Resize về 2048px là đủ nét và nhanh
-          const MAX_WIDTH = 2048; 
+          // GIẢM XUỐNG 1600px: Đủ nét cho OCR nhưng nhẹ hơn nhiều cho Safari Mobile
+          const MAX_WIDTH = 1600; 
           let width = img.width;
           let height = img.height;
 
@@ -68,7 +68,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           const ctx = canvas.getContext('2d');
           
           if (ctx) {
-            // QUAN TRỌNG: Tô nền trắng trước để tránh ảnh PNG trong suốt bị đen thui
+            // Nền trắng (Fix lỗi ảnh PNG trong suốt bị đen)
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, width, height);
             
@@ -77,8 +77,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          // Nén JPEG quality 0.85
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          // Nén JPEG quality 0.9 (Cao để giữ nét số)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
@@ -87,14 +87,14 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
     });
   };
 
-  // Hàm trích xuất JSON thông minh (Lấy từ dấu { đầu tiên đến } cuối cùng)
   const extractJSON = (text: string): string => {
-    const startIndex = text.indexOf('{');
-    const endIndex = text.lastIndexOf('}');
+    let cleanText = text.replace(/```json/g, '').replace(/```/g, '');
+    const startIndex = cleanText.indexOf('{');
+    const endIndex = cleanText.lastIndexOf('}');
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-        return text.substring(startIndex, endIndex + 1);
+        return cleanText.substring(startIndex, endIndex + 1);
     }
-    return text; // Fallback
+    return cleanText.trim();
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,91 +103,89 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
     setIsScanning(true);
 
-    try {
-      // 1. Compress Image
-      const base64Data = await compressImage(file);
-      
-      // 2. Call Gemini API
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      const prompt = `
-        Bạn là hệ thống OCR đọc bảng lương. 
-        NHIỆM VỤ: Chỉ trả về JSON thuần túy, không thêm bất kỳ lời dẫn hay Markdown nào.
-
-        QUY TẮC ĐỌC CỘT (Từ trái sang phải):
-        1. Tìm dòng tiêu đề chứa "Overtime" hoặc "Night time". Dữ liệu số nằm ở dòng ngay dưới.
-        2. Xác định cột mốc "Gongsoo" (cuối bảng).
-        3. Mapping ngược từ Gongsoo sang trái:
-           - Sát trái Gongsoo là cột [Night time 90%] (Thường = 0).
-           - Bên trái cột 90% là cột [Night time 70%] (Thường có dữ liệu, ví dụ 16).
-           - Bên trái cột 70% là cột [Night time 60%] (Thường trống, bỏ qua).
-           - Bên trái cột 60% là cột [Night time 50%].
-           - Bên trái cột 50% là cột [Night time 30%].
-
-        OUTPUT JSON:
-        {
-          "wd_total": number,
-          "al": number,
-          "ot_15": number,
-          "ot_2": number,
-          "ot_ht": number,
-          "nt_30": number,
-          "nt_50": number,
-          "nt_70": number,
-          "nt_90": number
-        }
-
-        Nếu ô trống, không rõ hoặc có dấu gạch ngang (-), hãy điền 0.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-              { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-              { text: prompt }
-          ]
-        }
-      });
-
-      console.log("Gemini Raw Response:", response.text); // Để debug nếu cần
-
-      const rawText = response.text || "{}";
-      // Dùng hàm extractJSON để lọc bỏ rác văn bản
-      const jsonStr = extractJSON(rawText);
-      
-      let data;
+    // Dùng timeout để UI kịp hiển thị Loading trước khi xử lý nặng
+    setTimeout(async () => {
       try {
-        data = JSON.parse(jsonStr);
-      } catch (e) {
-        console.error("JSON Parse Fail:", jsonStr);
-        throw new Error("AI trả về dữ liệu không đúng định dạng.");
+        // 1. Compress Image
+        const base64Data = await compressImage(file);
+        
+        // 2. Call Gemini API
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        
+        const prompt = `
+          Bạn là chuyên gia OCR.
+          
+          VẤN ĐỀ QUAN TRỌNG: Ảnh này có thể bị chụp bằng điện thoại và BỊ XOAY NGANG (90 độ).
+          NHIỆM VỤ: Hãy tự động phát hiện chiều của chữ số và "xoay ảo" ảnh trong đầu để đọc đúng từ trái sang phải.
+          
+          HÃY TÌM BẢNG LƯƠNG VÀ TRÍCH XUẤT (Mapping theo cột Gongsoo):
+          1. Tìm cột mốc "Gongsoo" (thường ở cuối).
+          2. Cột ngay bên TRÁI Gongsoo -> là [NT 90%] (Thường = 0).
+          3. Cột bên TRÁI của [NT 90%] -> là [NT 70%] (Thường có dữ liệu).
+          4. Cột bên TRÁI của [NT 70%] -> là [NT 60%] (Bỏ qua).
+          5. Cột bên TRÁI của [NT 60%] -> là [NT 50%].
+          6. Cột bên TRÁI của [NT 50%] -> là [NT 30%].
+
+          OUTPUT JSON (Chỉ JSON, không giải thích):
+          {
+            "wd_total": number,
+            "al": number,
+            "ot_15": number,
+            "ot_2": number,
+            "ot_ht": number,
+            "nt_30": number,
+            "nt_50": number,
+            "nt_70": number,
+            "nt_90": number
+          }
+          Nếu ô trống hoặc (-), giá trị là 0.
+        `;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [
+                { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
+                { text: prompt }
+            ]
+          }
+        });
+
+        const rawText = response.text || "{}";
+        const jsonStr = extractJSON(rawText);
+        
+        let data;
+        try {
+          data = JSON.parse(jsonStr);
+        } catch (e) {
+          console.error("Parse Error. Raw text:", rawText);
+          throw new Error("Không tìm thấy cấu trúc JSON hợp lệ.");
+        }
+
+        const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
+
+        setLocalData(prev => ({
+            ...prev,
+            ngay_di_lam: totalWorkDays,
+            tc_thuong: parseFloat(data.ot_15) || 0,
+            tc_nghi: parseFloat(data.ot_2) || 0,
+            tc_le: parseFloat(data.ot_ht) || 0,
+            cd_30: parseFloat(data.nt_30) || 0,
+            cd_50: parseFloat(data.nt_50) || 0,
+            cd_70: parseFloat(data.nt_70) || 0,
+            cd_90: parseFloat(data.nt_90) || 0,
+        }));
+        
+        setIsScanning(false);
+
+      } catch (error) {
+        console.error("Gemini Error:", error);
+        alert("⚠️ Không đọc được ảnh!\n\nNguyên nhân có thể:\n1. Ảnh chụp bị xoay ngang/dọc khó đọc.\n2. Ảnh quá mờ hoặc tối.\n3. Chụp quá xa bảng lương.\n\n👉 Hãy thử chụp lại: Thẳng góc & Đủ sáng.");
+        setIsScanning(false);
       }
-
-      // 3. Update State Logic
-      const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
-
-      setLocalData(prev => ({
-          ...prev,
-          ngay_di_lam: totalWorkDays,
-          tc_thuong: parseFloat(data.ot_15) || 0,
-          tc_nghi: parseFloat(data.ot_2) || 0,
-          tc_le: parseFloat(data.ot_ht) || 0,
-          cd_30: parseFloat(data.nt_30) || 0,
-          cd_50: parseFloat(data.nt_50) || 0,
-          cd_70: parseFloat(data.nt_70) || 0,
-          cd_90: parseFloat(data.nt_90) || 0,
-      }));
       
-      setIsScanning(false);
-
-    } catch (error) {
-      console.error("Gemini Error:", error);
-      alert("Lỗi: Không đọc được dữ liệu trong ảnh. Vui lòng chụp lại rõ nét hơn hoặc cắt bớt phần thừa.");
-      setIsScanning(false);
-    }
-    
-    if(fileInputRef.current) fileInputRef.current.value = "";
+      if(fileInputRef.current) fileInputRef.current.value = "";
+    }, 100);
   };
 
   const handleScanClick = () => {
@@ -204,10 +202,13 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
       >
         {/* Loading Overlay */}
         {isScanning && (
-            <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center animate-fade-in">
-                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
-                <p className="text-indigo-600 font-bold text-sm animate-pulse">Đang phân tích bảng lương...</p>
-                <p className="text-xs text-slate-400 mt-1">AI đang đọc dữ liệu...</p>
+            <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-[4px] flex flex-col items-center justify-center animate-fade-in">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">AI</div>
+                </div>
+                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang phân tích...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Đang xử lý hướng xoay & đọc số liệu</p>
             </div>
         )}
 
@@ -233,9 +234,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (AI)
+                 Quét Ảnh Bảng Công (Siêu Tốc)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Hỗ trợ ảnh chụp màn hình bảng lương Hyosung</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Hỗ trợ tốt nhất ảnh chụp ngang & đủ sáng</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
