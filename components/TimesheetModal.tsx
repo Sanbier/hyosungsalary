@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SalaryInputs } from '../types';
 import InputGroup from './InputGroup';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface TimesheetModalProps {
   isOpen: boolean;
@@ -53,8 +53,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // GIẢM XUỐNG 1024px: Đảm bảo nhẹ nhất có thể để tránh timeout trên mạng di động
-          const MAX_WIDTH = 1024; 
+          // 1500px: Balance between quality and token usage
+          const MAX_WIDTH = 1500; 
           let width = img.width;
           let height = img.height;
 
@@ -68,17 +68,14 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           const ctx = canvas.getContext('2d');
           
           if (ctx) {
-            // Nền trắng
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, width, height);
-            
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          // Giảm chất lượng xuống 0.8 để file nhẹ hơn nữa
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
@@ -87,22 +84,12 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
     });
   };
 
-  const extractJSON = (text: string): string => {
-    let cleanText = text.replace(/```json/g, '').replace(/```/g, '');
-    const startIndex = cleanText.indexOf('{');
-    const endIndex = cleanText.lastIndexOf('}');
-    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-        return cleanText.substring(startIndex, endIndex + 1);
-    }
-    return cleanText.trim();
-  };
-
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!process.env.API_KEY) {
-        alert("LỖI: Chưa cấu hình API Key trong file .env hoặc Vercel Settings.");
+        alert("LỖI: Chưa cấu hình API Key.");
         return;
     }
 
@@ -111,43 +98,16 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
     setTimeout(async () => {
       try {
         const base64Data = await compressImage(file);
-        
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
         const prompt = `
-          Bạn là hệ thống OCR chuyên đọc bảng lương Hyosung.
-          NHIỆM VỤ: Tìm các cột số liệu tính công.
-          
-          LƯU Ý: Ảnh có thể bị xoay ngang/dọc, hãy tự xoay trong đầu để đọc đúng.
-
-          MAPPING CỘT (Từ Phải sang Trái, lấy cột "Gongsoo" làm mốc):
-          1. Cột [Gongsoo] (Tổng công).
-          2. Bên trái nó là [Night time 90%].
-          3. Bên trái tiếp là [Night time 70%].
-          4. Bên trái tiếp là [Night time 60%] (Bỏ).
-          5. Bên trái tiếp là [Night time 50%].
-          6. Bên trái tiếp là [Night time 30%].
-          
-          Về tăng ca (OT):
-          Tìm các cột có tiêu đề 1.5, 2.0, HT (Holiday).
-
-          OUTPUT JSON:
-          {
-            "wd_total": number,
-            "al": number,
-            "ot_15": number,
-            "ot_2": number,
-            "ot_ht": number,
-            "nt_30": number,
-            "nt_50": number,
-            "nt_70": number,
-            "nt_90": number
-          }
-          Trả về 0 nếu ô trống.
+          Extract salary data from this timesheet image.
+          Identify columns for Working Days (Gongsoo), Overtime (1.5, 2.0, Holiday), and Night Time (30%, 50%, 70%, 90%).
+          Return 0 for empty values.
         `;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash-exp', 
+          model: 'gemini-2.0-flash', 
           contents: {
             parts: [
                 { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
@@ -156,46 +116,58 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           },
           config: {
             temperature: 0,
-            // XÓA safetySettings vì SDK mới có thể gây lỗi undefined import
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                wd_total: { type: Type.NUMBER, description: "Total Working Days (Gongsoo)" },
+                al: { type: Type.NUMBER, description: "Annual Leave days" },
+                ot_15: { type: Type.NUMBER, description: "Overtime 1.5 (Normal)" },
+                ot_2: { type: Type.NUMBER, description: "Overtime 2.0 (Day Off)" },
+                ot_ht: { type: Type.NUMBER, description: "Overtime Holiday" },
+                nt_30: { type: Type.NUMBER, description: "Night Time 30%" },
+                nt_50: { type: Type.NUMBER, description: "Night Time 50%" },
+                nt_70: { type: Type.NUMBER, description: "Night Time 70%" },
+                nt_90: { type: Type.NUMBER, description: "Night Time 90%" },
+              },
+              required: ["wd_total", "ot_15", "nt_30"],
+            }
           }
         });
 
-        const rawText = response.text || "{}";
-        const jsonStr = extractJSON(rawText);
-        
+        const jsonStr = response.text || "{}";
         let data;
         try {
           data = JSON.parse(jsonStr);
         } catch (e) {
-          console.error("Parse JSON Error:", rawText);
-          throw new Error("AI trả về dữ liệu không đúng định dạng JSON.");
+          console.error("Parse JSON Error:", jsonStr);
+          throw new Error("Dữ liệu trả về không đúng định dạng JSON.");
         }
 
-        const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
+        const totalWorkDays = (data.wd_total || 0) + (data.al || 0);
 
         setLocalData(prev => ({
             ...prev,
             ngay_di_lam: totalWorkDays,
-            tc_thuong: parseFloat(data.ot_15) || 0,
-            tc_nghi: parseFloat(data.ot_2) || 0,
-            tc_le: parseFloat(data.ot_ht) || 0,
-            cd_30: parseFloat(data.nt_30) || 0,
-            cd_50: parseFloat(data.nt_50) || 0,
-            cd_70: parseFloat(data.nt_70) || 0,
-            cd_90: parseFloat(data.nt_90) || 0,
+            tc_thuong: data.ot_15 || 0,
+            tc_nghi: data.ot_2 || 0,
+            tc_le: data.ot_ht || 0,
+            cd_30: data.nt_30 || 0,
+            cd_50: data.nt_50 || 0,
+            cd_70: data.nt_70 || 0,
+            cd_90: data.nt_90 || 0,
         }));
         
         setIsScanning(false);
 
       } catch (error: any) {
-        console.error("Gemini Details:", error);
-        // Hiển thị lỗi chi tiết để debug
+        console.error("Gemini Error:", error);
         let msg = error.message || "Lỗi không xác định";
-        if (msg.includes("400")) msg += " (Bad Request - Có thể do ảnh lỗi hoặc Config sai)";
-        if (msg.includes("403")) msg += " (Sai API Key hoặc bị chặn IP)";
-        if (msg.includes("503")) msg += " (Server quá tải - Thử lại sau)";
+        if (msg.includes("404")) msg = "Model AI không phản hồi (404). Vui lòng thử lại sau.";
+        if (msg.includes("400")) msg = "Ảnh không hợp lệ hoặc bị lỗi.";
+        if (msg.includes("503")) msg = "Server quá tải.";
         
-        alert(`⚠️ LỖI: ${msg}\n\nHãy thử chụp ảnh gần hơn, rõ nét hơn (chỉ chụp phần bảng số liệu).`);
+        alert(`⚠️ LỖI: ${msg}`);
         setIsScanning(false);
       }
       
@@ -222,8 +194,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                   <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">AI</div>
                 </div>
-                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang đọc dữ liệu...</p>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 2.0 Vision</p>
+                <p className="text-indigo-800 font-bold text-sm mt-4 animate-pulse">Đang xử lý hình ảnh...</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] text-center">Gemini 2.0 Flash</p>
             </div>
         )}
 
@@ -249,9 +221,9 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (Mới nhất)
+                 Quét Ảnh Bảng Công (AI)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Đã tối ưu hóa cho Mobile & Mạng chậm</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Sử dụng công nghệ Gemini 2.0 Flash</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
