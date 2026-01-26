@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SalaryInputs } from '../types';
 import InputGroup from './InputGroup';
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 interface TimesheetModalProps {
   isOpen: boolean;
@@ -53,8 +53,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // 1600px là điểm ngọt cho tốc độ/độ nét trên Mobile Web
-          const MAX_WIDTH = 1600; 
+          // GIẢM XUỐNG 1024px: Đảm bảo nhẹ nhất có thể để tránh timeout trên mạng di động
+          const MAX_WIDTH = 1024; 
           let width = img.width;
           let height = img.height;
 
@@ -68,7 +68,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           const ctx = canvas.getContext('2d');
           
           if (ctx) {
-            // Nền trắng quan trọng cho ảnh PNG
+            // Nền trắng
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, width, height);
             
@@ -77,8 +77,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ctx.drawImage(img, 0, 0, width, height);
           }
           
-          // JPEG 0.9
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          // Giảm chất lượng xuống 0.8 để file nhẹ hơn nữa
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
@@ -101,51 +101,52 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!process.env.API_KEY) {
+        alert("LỖI: Chưa cấu hình API Key trong file .env hoặc Vercel Settings.");
+        return;
+    }
+
     setIsScanning(true);
 
     setTimeout(async () => {
       try {
-        // 1. Compress Image
         const base64Data = await compressImage(file);
         
-        // 2. Call Gemini API
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
-        // Prompt đã được tối ưu hóa cho Vision Model
         const prompt = `
-          Bạn là hệ thống OCR trích xuất dữ liệu bảng lương.
+          Bạn là hệ thống OCR chuyên đọc bảng lương Hyosung.
+          NHIỆM VỤ: Tìm các cột số liệu tính công.
           
-          NHIỆM VỤ: Tìm và đọc chính xác các con số trong bảng.
-          LƯU Ý: Ảnh có thể bị xoay hoặc chụp nghiêng. Hãy tự định hướng lại ảnh.
+          LƯU Ý: Ảnh có thể bị xoay ngang/dọc, hãy tự xoay trong đầu để đọc đúng.
 
-          HÃY TÌM DÒNG DỮ LIỆU SỐ (Thường nằm dưới dòng tiêu đề).
-          
-          MAPPING CỘT TỪ PHẢI SANG TRÁI (Lấy cột "Gongsoo" làm mốc cuối cùng bên phải):
+          MAPPING CỘT (Từ Phải sang Trái, lấy cột "Gongsoo" làm mốc):
           1. Cột [Gongsoo] (Tổng công).
-          2. Sang trái 1 cột -> [Night time 90%] (Thường = 0).
-          3. Sang trái tiếp -> [Night time 70%] (Thường có số liệu > 0).
-          4. Sang trái tiếp -> [Night time 60%] (Bỏ qua).
-          5. Sang trái tiếp -> [Night time 50%].
-          6. Sang trái tiếp -> [Night time 30%].
+          2. Bên trái nó là [Night time 90%].
+          3. Bên trái tiếp là [Night time 70%].
+          4. Bên trái tiếp là [Night time 60%] (Bỏ).
+          5. Bên trái tiếp là [Night time 50%].
+          6. Bên trái tiếp là [Night time 30%].
+          
+          Về tăng ca (OT):
+          Tìm các cột có tiêu đề 1.5, 2.0, HT (Holiday).
 
-          OUTPUT JSON (Chỉ trả về JSON thuần):
+          OUTPUT JSON:
           {
-            "wd_total": number, // Tổng ngày công (WD Total)
-            "al": number,       // Phép năm (AL)
-            "ot_15": number,    // OT 1.5 (Overtime 1.5)
-            "ot_2": number,     // OT 2.0 (Overtime 2.0)
-            "ot_ht": number,    // OT HT (Holiday)
-            "nt_30": number,    // Ca đêm 30%
-            "nt_50": number,    // Ca đêm 50%
-            "nt_70": number,    // Ca đêm 70%
-            "nt_90": number     // Ca đêm 90%
+            "wd_total": number,
+            "al": number,
+            "ot_15": number,
+            "ot_2": number,
+            "ot_ht": number,
+            "nt_30": number,
+            "nt_50": number,
+            "nt_70": number,
+            "nt_90": number
           }
-          Quy tắc: Nếu ô trống hoặc dấu gạch ngang (-), trả về 0.
+          Trả về 0 nếu ô trống.
         `;
 
         const response = await ai.models.generateContent({
-          // SỬA LỖI: Dùng model gemini-2.0-flash-exp (Vision mạnh nhất hiện tại)
-          // Nếu model này quá tải, có thể thử gemini-1.5-pro
           model: 'gemini-2.0-flash-exp', 
           contents: {
             parts: [
@@ -154,13 +155,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             ]
           },
           config: {
-            temperature: 0, // Nhiệt độ 0 để lấy dữ liệu chính xác nhất
-            safetySettings: [
-                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            ]
+            temperature: 0,
+            // XÓA safetySettings vì SDK mới có thể gây lỗi undefined import
           }
         });
 
@@ -171,8 +167,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         try {
           data = JSON.parse(jsonStr);
         } catch (e) {
-          console.error("Parse Error. Raw text:", rawText);
-          throw new Error("Không tìm thấy cấu trúc dữ liệu.");
+          console.error("Parse JSON Error:", rawText);
+          throw new Error("AI trả về dữ liệu không đúng định dạng JSON.");
         }
 
         const totalWorkDays = (parseFloat(data.wd_total) || 0) + (parseFloat(data.al) || 0);
@@ -191,9 +187,15 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         
         setIsScanning(false);
 
-      } catch (error) {
-        console.error("Gemini Error:", error);
-        alert("⚠️ Không đọc được ảnh!\n\nHãy đảm bảo:\n1. Ảnh chụp rõ nét, đủ sáng.\n2. Chụp chính diện bảng số liệu.\n3. Mạng internet ổn định.");
+      } catch (error: any) {
+        console.error("Gemini Details:", error);
+        // Hiển thị lỗi chi tiết để debug
+        let msg = error.message || "Lỗi không xác định";
+        if (msg.includes("400")) msg += " (Bad Request - Có thể do ảnh lỗi hoặc Config sai)";
+        if (msg.includes("403")) msg += " (Sai API Key hoặc bị chặn IP)";
+        if (msg.includes("503")) msg += " (Server quá tải - Thử lại sau)";
+        
+        alert(`⚠️ LỖI: ${msg}\n\nHãy thử chụp ảnh gần hơn, rõ nét hơn (chỉ chụp phần bảng số liệu).`);
         setIsScanning(false);
       }
       
@@ -249,7 +251,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                 </svg>
                  Quét Ảnh Bảng Công (Mới nhất)
             </button>
-            <p className="text-[10px] text-center text-slate-400 mt-2">Đã cập nhật model Gemini 2.0 Flash Exp</p>
+            <p className="text-[10px] text-center text-slate-400 mt-2">Đã tối ưu hóa cho Mobile & Mạng chậm</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
