@@ -53,7 +53,8 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1024; // Resize to max width 1024px for speed
+          // Tăng độ phân giải lên 2560px để giữ nét chữ số
+          const MAX_WIDTH = 2560; 
           let width = img.width;
           let height = img.height;
 
@@ -65,10 +66,16 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
           
-          // Compress to JPEG 0.7 quality
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          // Dùng bộ lọc tốt hơn khi vẽ lại ảnh
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+          }
+          
+          // Tăng chất lượng ảnh lên 0.9 (gần như gốc nhưng nhẹ hơn)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           resolve(dataUrl.split(',')[1]);
         };
         img.onerror = (err) => reject(err);
@@ -95,34 +102,34 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const prompt = `
-        Bạn là chuyên gia OCR. Hãy trích xuất dữ liệu từ bảng công Hyosung.
-        
-        CẤU TRÚC BẢNG (Từ trái sang phải):
-        ... | Overtime HT | Night time 30% | NT 50% | NT 60% | NT 70% | NT 90% | Gongsoo | ...
+        Bạn là chuyên gia OCR xử lý bảng lương. Hãy trích xuất dữ liệu từ hình ảnh.
 
-        NHIỆM VỤ CỤ THỂ (QUAN TRỌNG):
-        1. Tìm dòng chứa dữ liệu số.
-        2. Xác định 5 cột "Night time" nằm liền nhau: 30 -> 50 -> 60 -> 70 -> 90.
-        3. Cột "NT 60%" (Cột thứ 3) thường RỖNG hoặc (-). Bỏ qua nó.
-        4. Cột "NT 70%" (Cột thứ 4) thường có dữ liệu (ví dụ: 16). Hãy lấy số ở cột này.
-        5. Cột "NT 90%" (Cột thứ 5) nằm ngay trước cột "Gongsoo". Nếu trống thì là 0.
-        
-        Lưu ý: "Gongsoo" là cột mốc bên phải. Cột sát bên trái nó là NT 90%, cột bên trái NT 90% là NT 70%.
+        TÌM DÒNG DỮ LIỆU SỐ DỰA TRÊN TIÊU ĐỀ SAU (Từ trái sang phải):
+        ... | OT HT | Night time 30% | NT 50% | NT 60% | NT 70% | NT 90% | Gongsoo | ...
 
-        TRẢ VỀ JSON DUY NHẤT:
+        QUY TẮC NHẬN DIỆN CỰC KỲ QUAN TRỌNG:
+        1. Tìm cột mốc "Gongsoo" (thường nằm gần cuối). Cột này KHÔNG lấy dữ liệu.
+        2. Nhìn sang TRÁI của "Gongsoo":
+           - Cột ngay sát trái Gongsoo là "Night time 90%": Thường là trống hoặc 0.
+           - Cột bên trái của 90% là "Night time 70%": Đây là cột quan trọng, thường có giá trị (ví dụ 16).
+           - Cột bên trái của 70% là "Night time 60%": Thường trống hoặc gạch ngang. Bỏ qua.
+           - Cột bên trái của 60% là "Night time 50%".
+           - Cột bên trái của 50% là "Night time 30%".
+        
+        HÃY TRẢ VỀ JSON DUY NHẤT (Không Markdown):
         {
-          "wd_total": number, // WD Total
+          "wd_total": number, // Tổng ngày công (WD Total)
           "al": number,       // AL
-          "ot_15": number,    // Overtime 1.5
-          "ot_2": number,     // Overtime 2
-          "ot_ht": number,    // Overtime HT
+          "ot_15": number,    // OT 1.5
+          "ot_2": number,     // OT 2.0
+          "ot_ht": number,    // OT HT (Lễ)
           "nt_30": number,    // Night time 30%
           "nt_50": number,    // Night time 50%
-          "nt_70": number,    // Night time 70% (Lấy chính xác cột thứ 4 trong nhóm)
-          "nt_90": number     // Night time 90% (Lấy chính xác cột thứ 5 trong nhóm)
+          "nt_70": number,    // Night time 70% (Nhớ quy tắc: Cách Gongsoo 1 cột về bên trái)
+          "nt_90": number     // Night time 90% (Nhớ quy tắc: Sát bên trái Gongsoo)
         }
         
-        Nếu ô trống trả về 0. Chỉ trả về JSON.
+        Nếu ô trống hoặc dấu gạch ngang (-), giá trị là 0.
       `;
 
       const response = await ai.models.generateContent({
@@ -158,7 +165,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
 
     } catch (error) {
       console.error("Gemini Error:", error);
-      alert("Không thể đọc được ảnh hoặc ảnh quá mờ. Vui lòng thử lại.");
+      alert("Không thể đọc được số liệu. Hãy đảm bảo ảnh đủ sáng và rõ nét.");
       setIsScanning(false);
     }
     
@@ -182,7 +189,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
             <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center animate-fade-in">
                 <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
                 <p className="text-indigo-600 font-bold text-sm animate-pulse">Đang phân tích bảng lương...</p>
-                <p className="text-xs text-slate-400 mt-1">Đang nén & gửi ảnh...</p>
+                <p className="text-xs text-slate-400 mt-1">Đang xử lý ảnh...</p>
             </div>
         )}
 
@@ -208,7 +215,7 @@ const TimesheetModal: React.FC<TimesheetModalProps> = ({ isOpen, onClose, curren
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                 </svg>
-                 Quét Ảnh Bảng Công (Nhanh)
+                 Quét Ảnh Bảng Công (AI)
             </button>
             <p className="text-[10px] text-center text-slate-400 mt-2">Hỗ trợ ảnh chụp màn hình bảng lương Hyosung</p>
         </div>
