@@ -16,7 +16,7 @@ const Row = ({ label, value, highlight = false, isBold = false }: { label: strin
 );
 
 const DetailCard = ({ title, colorClass, children, onClose }: any) => (
-    // Changed: Positioned above the tabs (bottom + padding), aligned left
+    // Positioned above the tabs (bottom + padding), aligned left
     <div className="absolute bottom-[calc(100%+1rem)] left-0 w-[85vw] md:w-80 bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl shadow-xl animate-fade-in-scale origin-bottom-left overflow-hidden z-50">
         <div className={`px-4 py-3 ${colorClass} bg-opacity-10 border-b border-gray-100 flex justify-between items-center`}>
             <h3 className={`font-bold text-sm ${colorClass.replace('bg-', 'text-')}`}>{title}</h3>
@@ -42,9 +42,10 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
   const tabs = [
     {
         id: 'basic',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg>,
-        color: 'bg-blue-500',
-        textColor: 'text-blue-600',
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg>,
+        gradient: 'bg-gradient-to-br from-blue-500 to-cyan-400',
+        shadow: 'shadow-blue-500/40',
+        textColor: 'text-blue-500',
         bgColor: 'bg-blue-50',
         label: 'Cơ Bản',
         content: (
@@ -64,9 +65,10 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'overtime',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
-        color: 'bg-amber-500',
-        textColor: 'text-amber-600',
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
+        gradient: 'bg-gradient-to-br from-amber-400 to-orange-500',
+        shadow: 'shadow-orange-500/40',
+        textColor: 'text-amber-500',
         bgColor: 'bg-amber-50',
         label: 'Tăng Ca',
         content: (
@@ -95,9 +97,10 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'allowance',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>,
-        color: 'bg-emerald-500',
-        textColor: 'text-emerald-600',
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>,
+        gradient: 'bg-gradient-to-br from-emerald-400 to-teal-500',
+        shadow: 'shadow-emerald-500/40',
+        textColor: 'text-emerald-500',
         bgColor: 'bg-emerald-50',
         label: 'Phụ Cấp',
         content: (
@@ -118,9 +121,10 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'deduction',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
-        color: 'bg-rose-500',
-        textColor: 'text-rose-600',
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
+        gradient: 'bg-gradient-to-br from-rose-500 to-pink-600',
+        shadow: 'shadow-rose-500/40',
+        textColor: 'text-rose-500',
         bgColor: 'bg-rose-50',
         label: 'Khấu Trừ',
         content: (
@@ -143,7 +147,6 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
   ];
 
   return (
-    // Changed: left-4 (or left-6), flex-row to layout horizontally
     <div className="fixed z-40 left-4 md:left-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-row gap-3 items-end pointer-events-none">
         {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -165,10 +168,10 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
                     <button
                         onClick={() => toggleTab(tab.id)}
                         className={`
-                            relative w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
+                            relative w-13 h-13 p-3 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ease-out
                             ${isActive 
-                                ? `${tab.color} text-white scale-110 shadow-${tab.color}/50` 
-                                : 'bg-white/80 backdrop-blur-md text-gray-500 hover:bg-white border border-white/60 hover:scale-105'
+                                ? `${tab.gradient} text-white scale-110 -translate-y-2 ${tab.shadow}` 
+                                : `bg-white/90 backdrop-blur-md ${tab.textColor} border border-white/60 hover:scale-105 hover:bg-white`
                             }
                         `}
                     >
