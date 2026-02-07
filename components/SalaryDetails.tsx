@@ -147,7 +147,8 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
   ];
 
   return (
-    <div className="fixed z-40 left-4 md:left-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-row gap-3 items-end pointer-events-none">
+    // Changed fixed to absolute to stick to the Phone Frame container
+    <div className="absolute z-40 left-4 md:left-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-row gap-3 items-end pointer-events-none">
         {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (

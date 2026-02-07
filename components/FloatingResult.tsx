@@ -14,9 +14,9 @@ const FloatingResult: React.FC<FloatingResultProps> = ({ value }) => {
 
   return (
     <>
-      {/* Floating Bubble */}
+      {/* Floating Bubble - Changed fixed to absolute */}
       <div 
-        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 group"
+        className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 group"
         onClick={() => setShowConfirm(true)}
       >
         <div className="absolute inset-0 bg-red-600 blur-lg opacity-40 rounded-full animate-pulse group-hover:opacity-60 transition-opacity"></div>
