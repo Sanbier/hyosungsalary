@@ -15,18 +15,18 @@ const Row = ({ label, value, highlight = false, isBold = false }: { label: strin
   </div>
 );
 
+// DetailCard now renders as a block element (static position) to be stacked in the flex container
 const DetailCard = ({ title, colorClass, children, onClose }: any) => (
-    // Positioned above the tabs (bottom + padding), aligned left
-    <div className="absolute bottom-[calc(100%+1rem)] left-0 w-[85vw] md:w-80 bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl shadow-xl animate-fade-in-scale origin-bottom-left overflow-hidden z-50">
-        <div className={`px-4 py-3 ${colorClass} bg-opacity-10 border-b border-gray-100 flex justify-between items-center`}>
-            <h3 className={`font-bold text-sm ${colorClass.replace('bg-', 'text-')}`}>{title}</h3>
-            <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+    <div className="w-full mb-2 bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl animate-fade-in-up origin-bottom overflow-hidden pointer-events-auto ring-1 ring-black/5">
+        <div className={`px-4 py-2.5 ${colorClass} bg-opacity-15 border-b border-gray-100 flex justify-between items-center`}>
+            <h3 className={`font-bold text-xs ${colorClass.replace('bg-', 'text-').replace('50', '600')}`}>{title}</h3>
+            <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-gray-400 hover:text-gray-600 p-1 bg-white/50 rounded-full hover:bg-white">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <div className="p-4 space-y-1 max-h-[50vh] overflow-y-auto custom-scrollbar">
+        <div className="p-3 space-y-1 max-h-[50vh] overflow-y-auto custom-scrollbar">
             {children}
         </div>
     </div>
@@ -42,7 +42,7 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
   const tabs = [
     {
         id: 'basic',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg>,
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg>,
         gradient: 'bg-gradient-to-br from-blue-500 to-cyan-400',
         shadow: 'shadow-blue-500/40',
         textColor: 'text-blue-500',
@@ -65,7 +65,7 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'overtime',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
         gradient: 'bg-gradient-to-br from-amber-400 to-orange-500',
         shadow: 'shadow-orange-500/40',
         textColor: 'text-amber-500',
@@ -97,7 +97,7 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'allowance',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>,
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>,
         gradient: 'bg-gradient-to-br from-emerald-400 to-teal-500',
         shadow: 'shadow-emerald-500/40',
         textColor: 'text-emerald-500',
@@ -121,7 +121,7 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     },
     {
         id: 'deduction',
-        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
+        icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>,
         gradient: 'bg-gradient-to-br from-rose-500 to-pink-600',
         shadow: 'shadow-rose-500/40',
         textColor: 'text-rose-500',
@@ -146,48 +146,56 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
     }
   ];
 
+  const activeTabData = tabs.find(t => t.id === activeTab);
+
   return (
-    // Changed fixed to absolute to stick to the Phone Frame container
-    <div className="absolute z-40 left-4 md:left-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-row gap-3 items-end pointer-events-none">
-        {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-                <div key={tab.id} className="relative pointer-events-auto flex flex-col items-center group">
-                    
-                    {/* Content Slide-up Card */}
-                    {isActive && (
-                        <DetailCard 
-                            title={tab.label} 
-                            colorClass={tab.bgColor} 
-                            onClose={() => setActiveTab(null)}
+    // MAIN CONTAINER: 
+    // - Fixed/Absolute relative to the phone frame.
+    // - W-full & px-4 ensures it spans the full width of the phone but keeps padding.
+    // - Flex-col-reverse: Buttons at bottom, Card stacks on top.
+    <div className="absolute z-40 left-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] w-full px-4 flex flex-col justify-end items-start pointer-events-none gap-2">
+        
+        {/* 1. Detail Content Layer (Stacks above buttons) */}
+        {activeTabData && (
+            <DetailCard 
+                title={activeTabData.label} 
+                colorClass={activeTabData.bgColor} 
+                onClose={() => setActiveTab(null)}
+            >
+                {activeTabData.content}
+            </DetailCard>
+        )}
+
+        {/* 2. Buttons Layer */}
+        {/* Changed gap-3 to gap-2 for closer spacing. Reduced button size for compactness. */}
+        <div className="flex flex-row gap-2 pointer-events-auto">
+            {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                    <div key={tab.id} className="relative group">
+                        <button
+                            onClick={() => toggleTab(tab.id)}
+                            className={`
+                                relative w-10 h-10 p-2 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ease-out
+                                ${isActive 
+                                    ? `${tab.gradient} text-white scale-110 -translate-y-1 ${tab.shadow}` 
+                                    : `bg-white/90 backdrop-blur-md ${tab.textColor} border border-white/60 hover:scale-105 hover:bg-white`
+                                }
+                            `}
                         >
-                            {tab.content}
-                        </DetailCard>
-                    )}
-
-                    {/* Tab Button */}
-                    <button
-                        onClick={() => toggleTab(tab.id)}
-                        className={`
-                            relative w-13 h-13 p-3 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ease-out
-                            ${isActive 
-                                ? `${tab.gradient} text-white scale-110 -translate-y-2 ${tab.shadow}` 
-                                : `bg-white/90 backdrop-blur-md ${tab.textColor} border border-white/60 hover:scale-105 hover:bg-white`
-                            }
-                        `}
-                    >
-                        {tab.icon}
-                    </button>
-
-                    {/* Label tooltip (above button) - Only visible when NOT active */}
-                    {!isActive && (
-                        <span className="absolute bottom-full mb-2 bg-gray-800/80 backdrop-blur text-white text-[10px] font-bold py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            {tab.label}
-                        </span>
-                    )}
-                </div>
-            );
-        })}
+                            {tab.icon}
+                        </button>
+                        
+                        {/* Tooltip */}
+                        {!isActive && !activeTab && (
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-800/80 backdrop-blur text-white text-[10px] font-bold py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                {tab.label}
+                            </span>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
     </div>
   );
 };

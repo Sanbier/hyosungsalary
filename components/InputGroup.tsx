@@ -47,8 +47,14 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, id, highlight = false, c
       `}>
         <input
           id={id}
+          /* 
+            Thay đổi quan trọng:
+            - Với currency (tiền tệ): Dùng "tel" + "numeric" để hiện bàn phím số nguyên lớn.
+            - Với số thường (công, giờ): Dùng "number" + "decimal" để hiện bàn phím số có dấu chấm (.) trên iOS/Android.
+          */
           type={currency ? "tel" : "number"}
-          inputMode={currency ? "numeric" : undefined}
+          inputMode={currency ? "numeric" : "decimal"}
+          step="any" // Cho phép nhập số thập phân thoải mái mà không bị báo đỏ
           min="0"
           placeholder="0"
           onFocus={(e) => {
