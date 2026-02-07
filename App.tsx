@@ -102,8 +102,8 @@ function App() {
         {/* BENTO GRID LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-6">
           
-          {/* LEFT COLUMN: INPUTS (lg:col-span-7) */}
-          <div className="lg:col-span-7 space-y-3">
+          {/* LEFT COLUMN: INPUTS (lg:col-span-12) - Expanded to full width since details are floating */}
+          <div className="lg:col-span-12 space-y-3">
             <GlassCard 
               title="Thông Tin Đầu Vào" 
               action={
@@ -178,50 +178,39 @@ function App() {
             </GlassCard>
             
           </div>
-
-          {/* RIGHT COLUMN: RESULTS & DETAILS (lg:col-span-5) */}
-          <div className="lg:col-span-5 space-y-3">
-            
-            {/* Desktop Sticky Summary */}
-            <div className="hidden lg:block sticky top-6 z-20">
-              <div className="relative overflow-hidden bg-gradient-to-br from-[#1e1b4b] to-[#312e81] rounded-3xl p-8 text-white shadow-2xl shadow-indigo-900/20">
+          
+          {/* Desktop Summary Card - Kept for visual balance on large screens */}
+           <div className="hidden lg:block lg:col-span-12">
+              <div className="relative overflow-hidden bg-gradient-to-br from-[#1e1b4b] to-[#312e81] rounded-3xl p-6 text-white shadow-2xl shadow-indigo-900/20 flex justify-between items-center">
                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-2xl -ml-10 -mb-10"></div>
-                 <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-8">
-                       <div>
+                 
+                 <div className="relative z-10 flex gap-10 items-center w-full justify-around">
+                     <div>
+                         <p className="text-indigo-200 text-sm font-medium">Tổng Thu Nhập</p>
+                         <span className="font-semibold text-xl">{formatVND(result.tongThuNhap)}</span>
+                     </div>
+                     <div className="text-center">
                          <p className="text-indigo-200 text-sm font-medium">Lương Thực Lãnh</p>
-                         <h2 className="text-4xl font-black mt-2 tracking-tight">{formatVND(result.thucLanh)}</h2>
-                       </div>
-                       <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                          <span className="text-xl">💰</span>
-                       </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm border-b border-white/10 pb-2">
-                        <span className="text-indigo-200">Tổng Thu Nhập</span>
-                        <span className="font-semibold">{formatVND(result.tongThuNhap)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-indigo-200">Tổng Khấu Trừ</span>
-                        <span className="font-semibold text-red-300">-{formatVND(result.kt.tongKhauTru)}</span>
-                      </div>
-                    </div>
+                         <h2 className="text-4xl font-black mt-1 tracking-tight">{formatVND(result.thucLanh)}</h2>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-indigo-200 text-sm font-medium">Tổng Khấu Trừ</p>
+                        <span className="font-semibold text-red-300 text-xl">-{formatVND(result.kt.tongKhauTru)}</span>
+                     </div>
                  </div>
               </div>
             </div>
-
-            {/* Detailed Breakdown */}
-            <SalaryDetails result={result} />
-          </div>
         </div>
       </div>
 
-      {/* Floating Result Bubble (Mobile Only) */}
+      {/* Floating Result Bubble (Mobile Only) - Keeps existing Logic */}
       <div className="lg:hidden">
         <FloatingResult value={result.thucLanh} />
       </div>
+
+      {/* NEW FLOATING SIDE TABS FOR DETAILS */}
+      <SalaryDetails result={result} />
 
       {/* Modals */}
       <TimesheetModal 
