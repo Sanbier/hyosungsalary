@@ -116,9 +116,9 @@ function App() {
                 </button>
               }
             >
-              {/* Very Compact Grid */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                <InputGroup id="luong_co_ban" label="Lương Cơ Bản" value={inputs.luong_co_ban} onChange={handleInputChange} currency />
+              {/* Compact Grid: 2 cols on mobile, 3 on tablet, 4 on desktop */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <InputGroup id="luong_co_ban" label="Lương Cơ Bản" value={inputs.luong_co_ban} onChange={handleInputChange} currency className="mb-0" />
                 
                 <InputGroup 
                     id="luong_tinh_tang_ca" 
@@ -127,6 +127,7 @@ function App() {
                     onChange={handleInputChange}
                     currency
                     disabled
+                    className="mb-0"
                 />
                 
                 <InputGroup 
@@ -135,41 +136,42 @@ function App() {
                   value={inputs.ngay_di_lam} 
                   onChange={handleInputChange} 
                   disabled
+                  className="mb-0"
                 />
                 
-                <InputGroup id="pc_chuyen_can" label="Chuyên Cần" value={inputs.pc_chuyen_can} onChange={handleInputChange} currency />
+                <InputGroup id="pc_chuyen_can" label="Chuyên Cần" value={inputs.pc_chuyen_can} onChange={handleInputChange} currency className="mb-0" />
                 
-                <InputGroup id="pc_trach_nhiem" label="Trách Nhiệm" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency />
-                <InputGroup id="pc_tham_nien" label="Thâm Niên" value={inputs.pc_tham_nien} onChange={handleInputChange} currency />
+                <InputGroup id="pc_trach_nhiem" label="Trách Nhiệm" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency className="mb-0" />
+                <InputGroup id="pc_tham_nien" label="Thâm Niên" value={inputs.pc_tham_nien} onChange={handleInputChange} currency className="mb-0" />
                 
-                <InputGroup id="pc_tay_nghe" label="Tay Nghề" value={inputs.pc_tay_nghe} onChange={handleInputChange} currency />
+                <InputGroup id="pc_tay_nghe" label="Tay Nghề" value={inputs.pc_tay_nghe} onChange={handleInputChange} currency className="mb-0" />
               </div>
 
-               {/* Mini Data Display for Timesheet - Compact Version */}
-               <div className="mt-3 pt-2 border-t border-dashed border-gray-200">
-                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+               {/* Mini Data Display for Timesheet - Extra Compact Version */}
+               <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                     {/* TC Thường */}
-                    <div className="flex-shrink-0 bg-blue-50/50 px-2 py-1.5 rounded-md border border-blue-100 min-w-[60px]">
-                      <p className="text-[9px] text-blue-500 font-bold uppercase leading-none mb-0.5">TC Thường</p>
-                      <p className="text-xs font-semibold text-blue-900">{inputs.tc_thuong}h</p>
+                    <div className="flex-shrink-0 bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100 min-w-[50px] text-center">
+                      <p className="text-[8px] text-blue-500 font-bold uppercase leading-none mb-0.5">Thường</p>
+                      <p className="text-[10px] font-bold text-blue-900">{inputs.tc_thuong}</p>
                     </div>
                     
                     {/* TC Nghỉ */}
-                    <div className="flex-shrink-0 bg-indigo-50/50 px-2 py-1.5 rounded-md border border-indigo-100 min-w-[60px]">
-                      <p className="text-[9px] text-indigo-500 font-bold uppercase leading-none mb-0.5">TC Nghỉ</p>
-                      <p className="text-xs font-semibold text-indigo-900">{inputs.tc_nghi}h</p>
+                    <div className="flex-shrink-0 bg-indigo-50/50 px-2 py-1 rounded-md border border-indigo-100 min-w-[50px] text-center">
+                      <p className="text-[8px] text-indigo-500 font-bold uppercase leading-none mb-0.5">Nghỉ</p>
+                      <p className="text-[10px] font-bold text-indigo-900">{inputs.tc_nghi}</p>
                     </div>
 
                     {/* TC Lễ */}
-                     <div className="flex-shrink-0 bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100 min-w-[60px]">
-                      <p className="text-[9px] text-purple-500 font-bold uppercase leading-none mb-0.5">TC Lễ</p>
-                      <p className="text-xs font-semibold text-purple-900">{inputs.tc_le}h</p>
+                     <div className="flex-shrink-0 bg-purple-50/50 px-2 py-1 rounded-md border border-purple-100 min-w-[50px] text-center">
+                      <p className="text-[8px] text-purple-500 font-bold uppercase leading-none mb-0.5">Lễ</p>
+                      <p className="text-[10px] font-bold text-purple-900">{inputs.tc_le}</p>
                     </div>
 
                     {/* Tổng PC Ca Đêm */}
-                    <div className="flex-shrink-0 bg-red-50/50 px-2 py-1.5 rounded-md border border-red-100 min-w-[70px]">
-                      <p className="text-[9px] text-red-500 font-bold uppercase leading-none mb-0.5">Ca Đêm</p>
-                      <p className="text-xs font-semibold text-red-900">{inputs.cd_30 + inputs.cd_50 + inputs.cd_70 + inputs.cd_90}h</p>
+                    <div className="flex-shrink-0 bg-red-50/50 px-2 py-1 rounded-md border border-red-100 min-w-[60px] text-center">
+                      <p className="text-[8px] text-red-500 font-bold uppercase leading-none mb-0.5">Ca Đêm</p>
+                      <p className="text-[10px] font-bold text-red-900">{inputs.cd_30 + inputs.cd_50 + inputs.cd_70 + inputs.cd_90}</p>
                     </div>
                   </div>
                </div>
