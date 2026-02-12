@@ -12,43 +12,104 @@ interface SettingsModalProps {
 
 type SettingsTab = 'basic' | 'insurance' | 'fixed';
 
+// Helper to convert entire config object to string values for form handling
+const configToStrings = (conf: SalaryConfig): Record<keyof SalaryConfig, string> => {
+  return Object.entries(conf).reduce((acc, [key, value]) => ({
+    ...acc,
+    [key]: value.toString()
+  }), {} as Record<keyof SalaryConfig, string>);
+};
+
+// Helper to parse strings back to numbers
+const stringsToConfig = (form: Record<keyof SalaryConfig, string>): SalaryConfig => {
+  return Object.entries(form).reduce((acc, [key, value]) => ({
+    ...acc,
+    [key]: parseFloat(value) || 0
+  }), {} as SalaryConfig);
+};
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave }) => {
-  const [localConfig, setLocalConfig] = useState<SalaryConfig>(config);
+  // Form state stores strings to allow intermediate typing (e.g., "5.")
+  const [formState, setFormState] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<SettingsTab>('basic');
 
   useEffect(() => {
     if (isOpen) {
-      setLocalConfig(config);
-      setActiveTab('basic'); // Reset to first tab on open
+      setFormState(configToStrings(config));
+      setActiveTab('basic');
     }
   }, [isOpen, config]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setLocalConfig(prev => ({
+    setFormState(prev => ({
       ...prev,
-      [id]: parseFloat(value) || 0
+      [id]: value
     }));
   };
 
-  // Hàm riêng xử lý nhập % (VD: Nhập 8 -> Lưu 0.08)
+  // Special handler for Percentage inputs (displayed as 0-100, stored as 0-1)
+  // But since we use string state, we just store what user types, and convert on Save?
+  // Actually, to keep it simple and consistent with previous logic: 
+  // We'll let user edit the RATE directly? No, user prefers "8" for 8%.
+  // Let's handle percentage UI transformation here.
+  
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    const floatVal = parseFloat(value);
-    setLocalConfig(prev => ({
+    // We store the raw input string in state (e.g. "8")
+    // When saving, we'll divide by 100
+    setFormState(prev => ({
         ...prev,
-        [id]: isNaN(floatVal) ? 0 : floatVal / 100
+        [id]: value
     }));
   };
+
+  const getPercentValue = (key: keyof SalaryConfig) => {
+    // If we are editing, formState has the string. 
+    // Wait, formState initialized from config (0.08). We want to show 8.
+    // So initialization needs to handle this or we handle it on render.
+    // Let's adjust initialization strategy slightly.
+    return formState[key];
+  };
+
+  // Improved Initialization for Percentages: 
+  // We should multiply by 100 when loading into formState for specific keys
+  useEffect(() => {
+    if (isOpen) {
+        const strState = configToStrings(config);
+        // Adjust percentages to be human readable (0.08 -> 8)
+        const percentKeys = ['kh_bhxh_rate', 'kh_bhyt_rate', 'kh_bhtn_rate'];
+        percentKeys.forEach(key => {
+            strState[key as keyof SalaryConfig] = (config[key as keyof SalaryConfig] * 100).toString();
+        });
+        setFormState(strState);
+        setActiveTab('basic');
+    }
+  }, [isOpen, config]);
 
   const handleReset = () => {
     if (window.confirm('Khôi phục toàn bộ cài đặt về mặc định?')) {
-      setLocalConfig(DEFAULT_CONFIG);
+        const strState = configToStrings(DEFAULT_CONFIG);
+        const percentKeys = ['kh_bhxh_rate', 'kh_bhyt_rate', 'kh_bhtn_rate'];
+        percentKeys.forEach(key => {
+            strState[key as keyof SalaryConfig] = (DEFAULT_CONFIG[key as keyof SalaryConfig] * 100).toString();
+        });
+        setFormState(strState);
     }
   };
 
   const handleSave = () => {
-    onSave(localConfig);
+    // Convert back to numbers
+    const newConfig = stringsToConfig(formState as Record<keyof SalaryConfig, string>);
+    
+    // Fix percentages (divide by 100)
+    const percentKeys = ['kh_bhxh_rate', 'kh_bhyt_rate', 'kh_bhtn_rate'];
+    percentKeys.forEach(key => {
+        const val = parseFloat(formState[key]) || 0;
+        newConfig[key as keyof SalaryConfig] = val / 100;
+    });
+
+    onSave(newConfig);
     onClose();
   };
 
@@ -69,7 +130,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l-.527-.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l-.527-.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
                 </span>
@@ -120,19 +181,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                             <InputGroup 
                                 id="ngay_chuan" 
                                 label="Ngày Công Chuẩn" 
-                                value={localConfig.ngay_chuan} 
+                                value={formState.ngay_chuan || ''} 
                                 onChange={handleChange} 
                             />
-                            {/* Đã bỏ prop currency để cho phép nhập số lẻ */}
+                            {/* Decimal Field: currency=false to allow decimal input */}
                             <div>
                                 <InputGroup 
                                     id="pc_he_so_trinh_do" 
                                     label="Hệ Số Trình Độ (VNĐ/Ngày)" 
-                                    value={localConfig.pc_he_so_trinh_do} 
+                                    value={formState.pc_he_so_trinh_do || ''} 
                                     onChange={handleChange}
                                 />
                                 <p className="text-[10px] text-slate-400 italic text-right mt-1">
-                                    * Cho phép nhập số thập phân (VD: 5769.22)
+                                    * Cho phép nhập số lẻ (VD: 5769.22)
                                 </p>
                             </div>
                         </div>
@@ -152,21 +213,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                             <InputGroup 
                                 id="kh_bhxh_rate" 
                                 label="BHXH" 
-                                value={parseFloat((localConfig.kh_bhxh_rate * 100).toFixed(2))} 
+                                value={formState.kh_bhxh_rate || ''} 
                                 onChange={handlePercentChange} 
                                 className="mb-0"
                             />
                             <InputGroup 
                                 id="kh_bhyt_rate" 
                                 label="BHYT" 
-                                value={parseFloat((localConfig.kh_bhyt_rate * 100).toFixed(2))} 
+                                value={formState.kh_bhyt_rate || ''} 
                                 onChange={handlePercentChange} 
                                 className="mb-0"
                             />
                             <InputGroup 
                                 id="kh_bhtn_rate" 
                                 label="BHTN" 
-                                value={parseFloat((localConfig.kh_bhtn_rate * 100).toFixed(2))} 
+                                value={formState.kh_bhtn_rate || ''} 
                                 onChange={handlePercentChange} 
                                 className="mb-0"
                             />
@@ -185,8 +246,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                     <div className="bg-emerald-50/30 p-3 rounded-xl border border-emerald-100">
                         <h4 className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Cộng thêm cố định (VNĐ)</h4>
                         <div className="grid grid-cols-2 gap-3">
-                            <InputGroup id="pc_ho_tro_di_lai" label="Hỗ Trợ Đi Lại" value={localConfig.pc_ho_tro_di_lai} onChange={handleChange} currency className="mb-0" />
-                            <InputGroup id="pc_tien_thuong" label="Tiền Thưởng" value={localConfig.pc_tien_thuong} onChange={handleChange} currency className="mb-0" />
+                            <InputGroup 
+                                id="pc_ho_tro_di_lai" 
+                                label="Hỗ Trợ Đi Lại" 
+                                value={formState.pc_ho_tro_di_lai || ''} 
+                                onChange={handleChange} 
+                                currency 
+                                className="mb-0" 
+                            />
+                            <InputGroup 
+                                id="pc_tien_thuong" 
+                                label="Tiền Thưởng" 
+                                value={formState.pc_tien_thuong || ''} 
+                                onChange={handleChange} 
+                                currency 
+                                className="mb-0" 
+                            />
                         </div>
                     </div>
 
@@ -194,10 +269,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                     <div className="bg-rose-50/30 p-3 rounded-xl border border-rose-100">
                         <h4 className="text-[10px] font-bold text-rose-600 uppercase mb-2">Trừ cố định (VNĐ)</h4>
                         <div className="space-y-2">
-                            <InputGroup id="kh_phi_cong_doan" label="Phí Công Đoàn" value={localConfig.kh_phi_cong_doan} onChange={handleChange} currency className="mb-0" />
+                            <InputGroup 
+                                id="kh_phi_cong_doan" 
+                                label="Phí Công Đoàn" 
+                                value={formState.kh_phi_cong_doan || ''} 
+                                onChange={handleChange} 
+                                currency 
+                                className="mb-0" 
+                            />
                             <div className="grid grid-cols-2 gap-3">
-                                <InputGroup id="kh_tien_tiet_kiem" label="Tiết Kiệm" value={localConfig.kh_tien_tiet_kiem} onChange={handleChange} currency className="mb-0" />
-                                <InputGroup id="kh_tien_tu_thien" label="Từ Thiện" value={localConfig.kh_tien_tu_thien} onChange={handleChange} currency className="mb-0" />
+                                <InputGroup 
+                                    id="kh_tien_tiet_kiem" 
+                                    label="Tiết Kiệm" 
+                                    value={formState.kh_tien_tiet_kiem || ''} 
+                                    onChange={handleChange} 
+                                    currency 
+                                    className="mb-0" 
+                                />
+                                <InputGroup 
+                                    id="kh_tien_tu_thien" 
+                                    label="Từ Thiện" 
+                                    value={formState.kh_tien_tu_thien || ''} 
+                                    onChange={handleChange} 
+                                    currency 
+                                    className="mb-0" 
+                                />
                             </div>
                         </div>
                     </div>

@@ -61,7 +61,7 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentData, onLoadPreset
             onChange={(e) => setSelectedPreset(e.target.value)}
             className="w-full pl-3 pr-8 py-2 text-sm bg-white/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 text-gray-700"
           >
-            <option value="">📂 Chọn Dữ Liệu Người Dùng</option>
+            <option value="">📂 Chọn Dữ Liệu</option>
             {Object.keys(presets).map(name => (
               <option key={name} value={name}>{name}</option>
             ))}
