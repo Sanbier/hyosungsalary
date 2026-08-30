@@ -135,8 +135,6 @@ function App() {
                             className="mb-0"
                             />
 
-                            <InputGroup id="so_ngay_phep" label="Ngày Phép" value={inputs.so_ngay_phep} onChange={handleInputChange} className="mb-0" />
-
                             <InputGroup id="pc_chuyen_can" label="Chuyên Cần" value={inputs.pc_chuyen_can} onChange={handleInputChange} currency className="mb-0" />
 
                             <InputGroup id="pc_trach_nhiem" label="Chức Danh" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency className="mb-0" />

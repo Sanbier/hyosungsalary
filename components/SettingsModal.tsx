@@ -28,6 +28,9 @@ const stringsToConfig = (form: Record<keyof SalaryConfig, string>): SalaryConfig
   }), {} as SalaryConfig);
 };
 
+// Boolean config keys that must NOT go through parseFloat
+const BOOLEAN_CONFIG_KEYS = ['ap_dung_thue_tncn'];
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, onSave }) => {
   // Form state stores strings to allow intermediate typing (e.g., "5.")
   const [formState, setFormState] = useState<Record<string, string>>({});
@@ -89,10 +92,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
 
   const handleReset = () => {
     if (window.confirm('Khôi phục toàn bộ cài đặt về mặc định?')) {
-        const strState = configToStrings(DEFAULT_CONFIG);
+        const strState: Record<string, string> = configToStrings(DEFAULT_CONFIG);
         const percentKeys = ['kh_bhxh_rate', 'kh_bhyt_rate', 'kh_bhtn_rate'];
         percentKeys.forEach(key => {
-            strState[key as keyof SalaryConfig] = (DEFAULT_CONFIG[key as keyof SalaryConfig] * 100).toString();
+            const rawVal = DEFAULT_CONFIG[key as keyof SalaryConfig];
+            strState[key] = ((typeof rawVal === 'number' ? rawVal : 0) * 100).toString();
+        });
+        // boolean keys
+        BOOLEAN_CONFIG_KEYS.forEach(key => {
+            strState[key] = (DEFAULT_CONFIG as any)[key] ? 'true' : 'false';
         });
         setFormState(strState);
     }
@@ -100,16 +108,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
 
   const handleSave = () => {
     // Convert back to numbers
-    const newConfig = stringsToConfig(formState as Record<keyof SalaryConfig, string>);
-    
+    const newConfig: any = stringsToConfig(formState as Record<keyof SalaryConfig, string>);
+
     // Fix percentages (divide by 100)
     const percentKeys = ['kh_bhxh_rate', 'kh_bhyt_rate', 'kh_bhtn_rate'];
     percentKeys.forEach(key => {
         const val = parseFloat(formState[key]) || 0;
-        newConfig[key as keyof SalaryConfig] = val / 100;
+        newConfig[key] = val / 100;
     });
 
-    onSave(newConfig);
+    // Restore boolean keys (parseFloat would have destroyed them)
+    BOOLEAN_CONFIG_KEYS.forEach(key => {
+        const raw = formState[key];
+        newConfig[key] = (raw === 'true' || raw === true);
+    });
+
+    onSave(newConfig as SalaryConfig);
     onClose();
   };
 
@@ -323,13 +337,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                                 currency 
                                 className="mb-0" 
                             />
-                            <InputGroup 
-                                id="thue_giam_tru_moi_npt" 
-                                label="Giảm Trừ Mỗi NPT" 
-                                value={formState.thue_giam_tru_moi_npt || ''} 
-                                onChange={handleChange} 
-                                currency 
-                                className="mb-0" 
+                            <InputGroup
+                                id="thue_giam_tru_moi_npt"
+                                label="Giảm Trừ Mỗi NPT"
+                                value={formState.thue_giam_tru_moi_npt || ''}
+                                onChange={handleChange}
+                                currency
+                                className="mb-0"
                             />
                         </div>
                         <p className="text-[10px] text-violet-500/70 mt-3 italic text-center">
@@ -337,6 +351,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                             <br />
                             (Phiếu công ty đang dùng 6,200,000 — giữ theo phiếu)
                         </p>
+                    </div>
+
+                    {/* Toggle Bật/Tắt thuế TNCN */}
+                    <div className="bg-rose-50/30 p-4 rounded-xl border border-rose-100">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label className="text-xs font-bold text-rose-700 uppercase block">Tính Thuế TNCN</label>
+                                <p className="text-[10px] text-slate-500 mt-1">
+                                    Tắt nếu công ty chưa/không tính thuế TNCN (giống WePayroll Aug 2026).
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFormState(prev => ({ ...prev, ap_dung_thue_tncn: prev.ap_dung_thue_tncn === 'true' ? 'false' : 'true' }))}
+                                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                                    formState.ap_dung_thue_tncn === 'true' ? 'bg-rose-500' : 'bg-slate-300'
+                                }`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                        formState.ap_dung_thue_tncn === 'true' ? 'translate-x-6' : 'translate-x-0.5'
+                                    }`}
+                                />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

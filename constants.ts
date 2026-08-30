@@ -13,7 +13,7 @@ export const PC_NUOI_CON_NHO = 200000;    // Phụ cấp nuôi con nhỏ
 export const KH_BHYT_RATE = 0.015;
 export const KH_BHTN_RATE = 0.01;
 export const KH_BHXH_RATE = 0.08;
-export const KH_PHI_CONG_DOAN = 50000; // Theo phiếu lương thật
+export const KH_PHI_CONG_DOAN = 53100; // Theo WePayroll Aug 2026
 export const KH_TIEN_TIET_KIEM = 200000;
 export const KH_TIEN_TU_THIEN = 8000;
 
@@ -54,4 +54,5 @@ export const DEFAULT_CONFIG: SalaryConfig = {
   kh_tien_tu_thien: KH_TIEN_TU_THIEN,
   thue_mien_thue_ban_than: MIEN_THUE_BAN_THAN,
   thue_giam_tru_moi_npt: GIAM_TRU_MOI_NPT,
+  ap_dung_thue_tncn: false, // WePayroll mặc định không tính thuế TNCN
 };

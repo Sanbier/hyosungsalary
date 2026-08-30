@@ -36,6 +36,7 @@ export interface SalaryConfig {
   kh_tien_tu_thien: number;
   thue_mien_thue_ban_than: number;  // Miễn trừ gia cảnh bản thân
   thue_giam_tru_moi_npt: number;    // Giảm trừ mỗi NPT
+  ap_dung_thue_tncn: boolean;        // Cờ BẬT/TẮT tính thuế TNCN (WePayroll có thể không tính)
 }
 
 export interface CalculationResult {

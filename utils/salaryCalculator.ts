@@ -45,7 +45,7 @@ export const calculateSalary = (inputs: SalaryInputs, config: SalaryConfig): Cal
     ngay_chuan, pc_he_so_trinh_do, pc_ho_tro_di_lai, pc_tien_thuong,
     kh_bhyt_rate, kh_bhtn_rate, kh_bhxh_rate,
     kh_phi_cong_doan, kh_tien_tiet_kiem, kh_tien_tu_thien,
-    thue_mien_thue_ban_than, thue_giam_tru_moi_npt,
+    thue_mien_thue_ban_than, thue_giam_tru_moi_npt, ap_dung_thue_tncn,
   } = config;
 
   const ngayDiLamThucTe = Math.max(0, ngay_di_lam);
@@ -122,7 +122,7 @@ export const calculateSalary = (inputs: SalaryInputs, config: SalaryConfig): Cal
   const giamTruBanThan = thue_mien_thue_ban_than;
   const giamTruNguoiPhuThuoc = Math.max(0, so_nguoi_phu_thuoc) * thue_giam_tru_moi_npt;
   const thuNhapTinhThue = Math.max(0, tongThuNhapChiuThue - giamTruBanThan - giamTruNguoiPhuThuoc);
-  const thueTNCN = tinhThueTNCNTheoBacThang(thuNhapTinhThue);
+  const thueTNCN = ap_dung_thue_tncn ? tinhThueTNCNTheoBacThang(thuNhapTinhThue) : 0;
 
   // ============================================================
   // 7. THỰC LÃNH
