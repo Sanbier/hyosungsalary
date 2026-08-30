@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DEFAULT_INPUTS, DEFAULT_CONFIG } from './constants';
 import { SalaryInputs, CalculationResult, SalaryConfig } from './types';
 import { calculateSalary } from './utils/salaryCalculator';
@@ -14,11 +14,13 @@ import SalaryDetails from './components/SalaryDetails';
 
 function App() {
   const [inputs, setInputs] = useState<SalaryInputs>(DEFAULT_INPUTS);
-  
+
   // Config state initialized from localStorage or defaults
   const [config, setConfig] = useState<SalaryConfig>(() => {
     const saved = localStorage.getItem('salaryConfig');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    // Merge with defaults so new config keys (thuế TNCN) có giá trị mặc định
+    const parsed = saved ? JSON.parse(saved) : {};
+    return { ...DEFAULT_CONFIG, ...parsed };
   });
 
   const [isTimesheetModalOpen, setTimesheetModalOpen] = useState(false);
@@ -27,19 +29,6 @@ function App() {
 
   // Calculate salary whenever inputs or config change
   const result: CalculationResult = useMemo(() => calculateSalary(inputs, config), [inputs, config]);
-
-  // Effect: Auto-calculate "Lương Tính Tăng Ca"
-  useEffect(() => {
-    const pcTrinhDoChuan = config.pc_he_so_trinh_do * config.ngay_chuan;
-    const newLuongTinhTangCa = Math.round(inputs.luong_co_ban + inputs.pc_tham_nien + inputs.pc_trach_nhiem + pcTrinhDoChuan);
-    
-    if (newLuongTinhTangCa !== inputs.luong_tinh_tang_ca) {
-        setInputs(prev => ({
-            ...prev,
-            luong_tinh_tang_ca: newLuongTinhTangCa
-        }));
-    }
-  }, [inputs.luong_co_ban, inputs.pc_tham_nien, inputs.pc_trach_nhiem, inputs.luong_tinh_tang_ca, config]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -65,10 +54,10 @@ function App() {
   return (
     // OUTER WRAPPER: Handles Desktop Centering & Background
     <div className="w-full min-h-[100dvh] md:flex md:items-center md:justify-center md:bg-gray-100 md:py-10">
-      
+
       {/* PHONE SIMULATOR FRAME (iPhone 15 Pro Max: 430x932) */}
       <div className="relative w-full h-[100dvh] md:w-[430px] md:h-[932px] md:max-h-[95vh] md:bg-[#F3F4F6] md:rounded-[55px] md:border-[12px] md:border-[#1a1a1a] md:shadow-2xl overflow-hidden bg-transparent">
-        
+
         {/* Dynamic Island (Desktop Only Decoration) */}
         <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-[126px] h-[35px] bg-black rounded-b-[22px] z-[60] pointer-events-none"></div>
 
@@ -76,7 +65,7 @@ function App() {
         <div className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar relative">
             <div className="relative min-h-full px-3 pb-[8rem] pt-[calc(env(safe-area-inset-top)+1.25rem)] md:pt-14 font-sans">
                 <div className="space-y-3">
-                    
+
                     {/* Compact Header */}
                     <div className="flex flex-row items-center justify-between gap-2 py-1">
                     <div>
@@ -85,7 +74,7 @@ function App() {
                         </h1>
                     </div>
                     <div className="flex gap-2">
-                        <button 
+                        <button
                         onClick={() => setTimeModalOpen(true)}
                         className="px-3 py-1.5 bg-white/60 hover:bg-white border border-white/50 text-indigo-600 rounded-full shadow-sm text-xs font-bold transition-all backdrop-blur-md hover:shadow-md flex items-center gap-1.5"
                         >
@@ -94,7 +83,7 @@ function App() {
                         </svg>
                         Tính Giờ
                         </button>
-                        <button 
+                        <button
                         onClick={() => setSettingsOpen(true)}
                         className="p-1.5 bg-white/60 hover:bg-white border border-white/50 text-slate-500 hover:text-indigo-600 rounded-full shadow-sm transition-all backdrop-blur-md hover:shadow-md"
                         title="Cài đặt thông số"
@@ -111,10 +100,10 @@ function App() {
 
                     {/* MAIN CONTENT */}
                     <div className="space-y-3">
-                        <GlassCard 
-                        title="Thông Tin Đầu Vào" 
+                        <GlassCard
+                        title="Thông Tin Đầu Vào"
                         action={
-                            <button 
+                            <button
                             onClick={() => setTimesheetModalOpen(true)}
                             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-1"
                             >
@@ -126,32 +115,36 @@ function App() {
                         {/* Compact Grid: 2 cols on mobile */}
                         <div className="grid grid-cols-2 gap-2">
                             <InputGroup id="luong_co_ban" label="Lương Cơ Bản" value={inputs.luong_co_ban} onChange={handleInputChange} currency className="mb-0" />
-                            
-                            <InputGroup 
-                                id="luong_tinh_tang_ca" 
-                                label="Lương T.Tăng Ca" 
-                                value={inputs.luong_tinh_tang_ca} 
+
+                            <InputGroup
+                                id="luong_tinh_tang_ca"
+                                label="Lương T.Tăng Ca"
+                                value={result.tc.luongTinhTangCa}
                                 onChange={handleInputChange}
                                 currency
                                 disabled
                                 className="mb-0"
                             />
-                            
-                            <InputGroup 
-                            id="ngay_di_lam" 
-                            label="Ngày Công" 
-                            value={inputs.ngay_di_lam} 
-                            onChange={handleInputChange} 
+
+                            <InputGroup
+                            id="ngay_di_lam"
+                            label="Ngày Công"
+                            value={inputs.ngay_di_lam}
+                            onChange={handleInputChange}
                             disabled
                             className="mb-0"
                             />
-                            
+
                             <InputGroup id="pc_chuyen_can" label="Chuyên Cần" value={inputs.pc_chuyen_can} onChange={handleInputChange} currency className="mb-0" />
-                            
+
                             <InputGroup id="pc_trach_nhiem" label="Trách Nhiệm" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency className="mb-0" />
                             <InputGroup id="pc_tham_nien" label="Thâm Niên" value={inputs.pc_tham_nien} onChange={handleInputChange} currency className="mb-0" />
-                            
+
                             <InputGroup id="pc_tay_nghe" label="Tay Nghề" value={inputs.pc_tay_nghe} onChange={handleInputChange} currency className="mb-0" />
+                            <InputGroup id="pc_mo_truong" label="MT / PCCC" value={inputs.pc_mo_truong} onChange={handleInputChange} currency className="mb-0" />
+
+                            <InputGroup id="pc_nuoi_con_nho" label="Nuôi Con Nhỏ" value={inputs.pc_nuoi_con_nho} onChange={handleInputChange} currency className="mb-0" />
+                            <InputGroup id="so_nguoi_phu_thuoc" label="NPT" value={inputs.so_nguoi_phu_thuoc} onChange={handleInputChange} className="mb-0" />
                         </div>
 
                         {/* Mini Data Display */}
@@ -162,10 +155,10 @@ function App() {
                                 <p className="text-[8px] text-blue-500 font-bold uppercase leading-none mb-0.5">Thường</p>
                                 <p className="text-[10px] font-bold text-blue-900">{inputs.tc_thuong}</p>
                                 </div>
-                                
-                                {/* TC Nghỉ */}
+
+                                {/* TC CN (Chủ nhật) */}
                                 <div className="flex-shrink-0 bg-indigo-50/50 px-2 py-1 rounded-md border border-indigo-100 min-w-[50px] text-center">
-                                <p className="text-[8px] text-indigo-500 font-bold uppercase leading-none mb-0.5">Nghỉ</p>
+                                <p className="text-[8px] text-indigo-500 font-bold uppercase leading-none mb-0.5">CN</p>
                                 <p className="text-[10px] font-bold text-indigo-900">{inputs.tc_nghi}</p>
                                 </div>
 
@@ -193,14 +186,14 @@ function App() {
         <SalaryDetails result={result} />
 
         {/* Modals - These can overlap the whole frame */}
-        <TimesheetModal 
-            isOpen={isTimesheetModalOpen} 
-            onClose={() => setTimesheetModalOpen(false)} 
+        <TimesheetModal
+            isOpen={isTimesheetModalOpen}
+            onClose={() => setTimesheetModalOpen(false)}
             currentData={inputs}
             onApply={updateFromTimesheet}
         />
-        
-        <TimeCalculatorModal 
+
+        <TimeCalculatorModal
             isOpen={isTimeModalOpen}
             onClose={() => setTimeModalOpen(false)}
         />

@@ -112,6 +112,8 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
                 <Row label="PC Chuyên Cần" value={formatVND(result.pc.pcChuyenCan)} highlight />
                 <Row label="Hỗ Trợ Đi Lại" value={formatVND(result.pc.pcDiLai)} />
                 <Row label="Tiền Thưởng" value={formatVND(result.pc.pcThuong)} />
+                <Row label="MT / PCCC" value={formatVND(result.pc.pcMoiTruong)} />
+                <Row label="Nuôi Con Nhỏ" value={formatVND(result.pc.pcNuoiConNho)} />
                 <div className="mt-2 pt-2 bg-emerald-50/50 rounded-lg p-2 text-center">
                     <span className="text-xs text-emerald-500 font-bold uppercase block">Tổng Phụ Cấp</span>
                     <span className="text-emerald-700 font-bold text-lg">{formatVND(result.pc.tongPhuCap)}</span>
@@ -137,9 +139,15 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
                 <Row label="Phí Công Đoàn" value={formatVND(result.kt.phiCongDoan)} />
                 <Row label="Tiền Tiết Kiệm" value={formatVND(result.kt.tienTietKiem)} />
                 <Row label="Tiền Từ Thiện" value={formatVND(result.kt.tienTuThien)} />
+                <div className="h-px bg-gray-200 my-2"></div>
+                <Row label="Thuế TNCN" value={formatVND(result.thue.thueTNCN)} highlight />
+                <Row label="└ TN chịu thuế" value={formatVND(result.thue.tongThuNhapChiuThue)} />
+                <Row label="└ Miễn trừ bản thân" value={formatVND(result.thue.giamTruBanThan)} />
+                <Row label="└ Giảm trừ NPT" value={formatVND(result.thue.giamTruNguoiPhuThuoc)} />
+                <Row label="└ TN tính thuế" value={formatVND(result.thue.thuNhapTinhThue)} />
                 <div className="mt-2 pt-2 bg-rose-50/50 rounded-lg p-2 text-center">
                     <span className="text-xs text-rose-500 font-bold uppercase block">Tổng Khấu Trừ</span>
-                    <span className="text-rose-700 font-bold text-lg">{formatVND(result.kt.tongKhauTru)}</span>
+                    <span className="text-rose-700 font-bold text-lg">{formatVND(result.kt.tongKhauTru + result.thue.thueTNCN)}</span>
                 </div>
             </>
         )

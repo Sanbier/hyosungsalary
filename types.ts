@@ -7,12 +7,15 @@ export interface SalaryInputs {
   pc_trach_nhiem: number;
   pc_tham_nien: number;
   pc_tay_nghe: number;
-  
+  pc_mo_truong: number;        // Hỗ trợ môi trường / TN PCCC
+  pc_nuoi_con_nho: number;     // Phụ cấp nuôi con nhỏ
+  so_nguoi_phu_thuoc: number;  // Số người phụ thuộc (cho thuế TNCN)
+
   // Overtime Hours
   tc_thuong: number;
-  tc_nghi: number;
-  tc_le: number;
-  
+  tc_nghi: number;   // TC Chủ nhật ×200%
+  tc_le: number;    // TC Ngày lễ ×300%
+
   // Night Shift Hours
   cd_30: number;
   cd_50: number;
@@ -31,6 +34,8 @@ export interface SalaryConfig {
   kh_phi_cong_doan: number;
   kh_tien_tiet_kiem: number;
   kh_tien_tu_thien: number;
+  thue_mien_thue_ban_than: number;  // Miễn trừ gia cảnh bản thân
+  thue_giam_tru_moi_npt: number;    // Giảm trừ mỗi NPT
 }
 
 export interface CalculationResult {
@@ -55,13 +60,15 @@ export interface CalculationResult {
     tongTienTangCa: number;
   };
   pc: {
-    pcTrinhDoCongThuc: number; // 5769.22 * days
+    pcTrinhDoCongThuc: number;
     pcTrachNhiem: number;
     pcThamNien: number;
-    pcTayNghe: number; // Input
+    pcTayNghe: number;
     pcChuyenCan: number;
-    pcDiLai: number; // Fixed 250k
-    pcThuong: number; // Fixed 50k
+    pcDiLai: number;
+    pcThuong: number;
+    pcMoiTruong: number;        // NEW
+    pcNuoiConNho: number;       // NEW
     tongPhuCap: number;
   };
   kt: {
@@ -73,6 +80,13 @@ export interface CalculationResult {
     tienTietKiem: number;
     tienTuThien: number;
     tongKhauTru: number;
+  };
+  thue: {                        // NEW: nhóm thuế TNCN
+    tongThuNhapChiuThue: number;  // Tổng TN chịu thuế (trước khi miễn giảm)
+    giamTruBanThan: number;       // Miễn trừ bản thân
+    giamTruNguoiPhuThuoc: number; // Giảm trừ NPT
+    thuNhapTinhThue: number;      // TN tính thuế (sau miễn giảm)
+    thueTNCN: number;             // Thuế TNCN phải nộp
   };
   tongThuNhap: number;
   thucLanh: number;

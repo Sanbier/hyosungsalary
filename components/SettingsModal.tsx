@@ -10,7 +10,7 @@ interface SettingsModalProps {
   onSave: (newConfig: SalaryConfig) => void;
 }
 
-type SettingsTab = 'basic' | 'insurance' | 'fixed';
+type SettingsTab = 'basic' | 'insurance' | 'fixed' | 'thue';
 
 // Helper to convert entire config object to string values for form handling
 const configToStrings = (conf: SalaryConfig): Record<keyof SalaryConfig, string> => {
@@ -164,6 +164,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                 >
                     Định Mức
                 </button>
+                <button 
+                    onClick={() => setActiveTab('thue')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${activeTab === 'thue' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Thuế
+                </button>
             </div>
         </div>
 
@@ -296,6 +302,41 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
                                 />
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB: THUẾ TNCN */}
+            {activeTab === 'thue' && (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="bg-violet-50/30 p-4 rounded-xl border border-violet-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-xs font-bold text-violet-700 uppercase">Giảm Trừ Gia Cảnh</label>
+                            <span className="text-[10px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full font-bold">VNĐ/tháng</span>
+                        </div>
+                        <div className="space-y-3">
+                            <InputGroup 
+                                id="thue_mien_thue_ban_than" 
+                                label="Miễn Trừ Bản Thân" 
+                                value={formState.thue_mien_thue_ban_than || ''} 
+                                onChange={handleChange} 
+                                currency 
+                                className="mb-0" 
+                            />
+                            <InputGroup 
+                                id="thue_giam_tru_moi_npt" 
+                                label="Giảm Trừ Mỗi NPT" 
+                                value={formState.thue_giam_tru_moi_npt || ''} 
+                                onChange={handleChange} 
+                                currency 
+                                className="mb-0" 
+                            />
+                        </div>
+                        <p className="text-[10px] text-violet-500/70 mt-3 italic text-center">
+                            Theo Nghị quyết 954/2020: Bản thân 11,000,000 & NPT 4,400,000 VNĐ/tháng.
+                            <br />
+                            (Phiếu công ty đang dùng 6,200,000 — giữ theo phiếu)
+                        </p>
                     </div>
                 </div>
             )}
