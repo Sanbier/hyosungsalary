@@ -3,18 +3,18 @@ export interface SalaryInputs {
   luong_co_ban: number;
   luong_tinh_tang_ca: number;
   ngay_di_lam: number;
-  pc_chuyen_can: number;
-  pc_trach_nhiem: number;
-  pc_tham_nien: number;
+  so_ngay_phep: number;        // Ngày phép năm (được trả lương)
+  pc_chuyen_can: number;       // Thương chuyên cần (400,000)
+  pc_trach_nhiem: number;      // Trợ cấp chức danh / Trách nhiệm (1,100,000)
+  pc_tham_nien: number;        // Trợ cấp thâm niên (150,000)
   pc_tay_nghe: number;
-  pc_mo_truong: number;        // Hỗ trợ môi trường / TN PCCC
-  pc_nuoi_con_nho: number;     // Phụ cấp nuôi con nhỏ
+  pc_nuoi_con_nho: number;     // Phụ cấp nuôi con nhỏ (200,000)
   so_nguoi_phu_thuoc: number;  // Số người phụ thuộc (cho thuế TNCN)
 
   // Overtime Hours
   tc_thuong: number;
   tc_nghi: number;   // TC Chủ nhật ×200%
-  tc_le: number;    // TC Ngày lễ ×300%
+  tc_le: number;     // TC Ngày lễ ×300%
 
   // Night Shift Hours
   cd_30: number;
@@ -41,11 +41,12 @@ export interface SalaryConfig {
 export interface CalculationResult {
   ttcb: {
     luongCoBan: number;
-    ngayLamThucTe: number;
+    ngayLamThucTe: number;     // ngay_di_lam (không tính phép)
+    ngayCongTinhLuong: number; // ngay_di_lam + so_ngay_phep (tính lương thực tế)
     tien1GioLam: number;
     tien1NgayLam: number;
     soGioLamViec: number;
-    luongThucTe: number;
+    luongThucTe: number;       // Lương = LCB / 26 × ngayCongTinhLuong
   };
   tc: {
     luongTinhTangCa: number;
@@ -61,14 +62,13 @@ export interface CalculationResult {
   };
   pc: {
     pcTrinhDoCongThuc: number;
-    pcTrachNhiem: number;
+    pcTrachNhiem: number;      // Chức danh
     pcThamNien: number;
     pcTayNghe: number;
     pcChuyenCan: number;
     pcDiLai: number;
     pcThuong: number;
-    pcMoiTruong: number;        // NEW
-    pcNuoiConNho: number;       // NEW
+    pcNuoiConNho: number;
     tongPhuCap: number;
   };
   kt: {

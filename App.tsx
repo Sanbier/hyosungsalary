@@ -135,15 +135,18 @@ function App() {
                             className="mb-0"
                             />
 
+                            <InputGroup id="so_ngay_phep" label="Ngày Phép" value={inputs.so_ngay_phep} onChange={handleInputChange} className="mb-0" />
+
                             <InputGroup id="pc_chuyen_can" label="Chuyên Cần" value={inputs.pc_chuyen_can} onChange={handleInputChange} currency className="mb-0" />
 
-                            <InputGroup id="pc_trach_nhiem" label="Trách Nhiệm" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency className="mb-0" />
+                            <InputGroup id="pc_trach_nhiem" label="Chức Danh" value={inputs.pc_trach_nhiem} onChange={handleInputChange} currency className="mb-0" />
+
                             <InputGroup id="pc_tham_nien" label="Thâm Niên" value={inputs.pc_tham_nien} onChange={handleInputChange} currency className="mb-0" />
 
                             <InputGroup id="pc_tay_nghe" label="Tay Nghề" value={inputs.pc_tay_nghe} onChange={handleInputChange} currency className="mb-0" />
-                            <InputGroup id="pc_mo_truong" label="MT / PCCC" value={inputs.pc_mo_truong} onChange={handleInputChange} currency className="mb-0" />
 
                             <InputGroup id="pc_nuoi_con_nho" label="Nuôi Con Nhỏ" value={inputs.pc_nuoi_con_nho} onChange={handleInputChange} currency className="mb-0" />
+
                             <InputGroup id="so_nguoi_phu_thuoc" label="NPT" value={inputs.so_nguoi_phu_thuoc} onChange={handleInputChange} className="mb-0" />
                         </div>
 

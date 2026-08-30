@@ -52,6 +52,8 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
             <>
                 <Row label="Lương Cơ Bản" value={formatVND(result.ttcb.luongCoBan)} highlight />
                 <Row label="Ngày Làm Thực Tế" value={`${result.ttcb.ngayLamThucTe} ngày`} />
+                <Row label="Ngày Phép Năm" value={`${result.ttcb.ngayCongTinhLuong - result.ttcb.ngayLamThucTe} ngày`} />
+                <Row label="Ngày Công Tính Lương" value={`${result.ttcb.ngayCongTinhLuong} ngày`} />
                 <Row label="Số Giờ Làm Việc" value={`${result.ttcb.soGioLamViec} giờ`} />
                 <div className="h-px bg-gray-200 my-2"></div>
                 <Row label="Tiền 1 Giờ Làm" value={formatVND(result.ttcb.tien1GioLam)} />
@@ -112,7 +114,6 @@ const SalaryDetails: React.FC<SalaryDetailsProps> = ({ result }) => {
                 <Row label="PC Chuyên Cần" value={formatVND(result.pc.pcChuyenCan)} highlight />
                 <Row label="Hỗ Trợ Đi Lại" value={formatVND(result.pc.pcDiLai)} />
                 <Row label="Tiền Thưởng" value={formatVND(result.pc.pcThuong)} />
-                <Row label="MT / PCCC" value={formatVND(result.pc.pcMoiTruong)} />
                 <Row label="Nuôi Con Nhỏ" value={formatVND(result.pc.pcNuoiConNho)} />
                 <div className="mt-2 pt-2 bg-emerald-50/50 rounded-lg p-2 text-center">
                     <span className="text-xs text-emerald-500 font-bold uppercase block">Tổng Phụ Cấp</span>
