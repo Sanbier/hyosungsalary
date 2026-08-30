@@ -126,8 +126,11 @@ export const calculateSalary = (inputs: SalaryInputs, config: SalaryConfig): Cal
 
   // ============================================================
   // 7. THỰC LÃNH
+  //    Làm tròn theo đơn vị 1,000 VND (theo phiếu lương công ty)
+  //    VD: 14,129,478 → 14,129,000; 14,129,590 → 14,130,000
   // ============================================================
-  const thucLanh = tongThuNhap - tongKhauTru - thueTNCN;
+  const thucLanhRaw = tongThuNhap - tongKhauTru - thueTNCN;
+  const thucLanh = Math.round(thucLanhRaw / 1000) * 1000;
 
   return {
     ttcb: {
